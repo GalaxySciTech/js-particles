@@ -106,7 +106,7 @@ async function autoMine(miningRewardAddress) {
 
 p2p.listen({ port: 3666 });
 
-if (process.env.isMiner) {
+if (process.env.isMiner == 1) {
   autoMine(
     process.env.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43"
   );
