@@ -141,11 +141,11 @@ class Blockchain {
       proposedBlock.data.forEach((tx) => {
         const wallet = this.wallets.find((w) => w.address === tx.coninbase);
         if (wallet) {
-          wallet.balance += BigInt(tx.amount);
+          wallet.balance += tx.amount;
         } else {
           this.wallets.push({
             address: tx.coninbase,
-            balance: BigInt(tx.amount),
+            balance: tx.amount,
           });
         }
       });
