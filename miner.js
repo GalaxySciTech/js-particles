@@ -16,9 +16,9 @@ async function minePendingTransactions(miningRewardAddress) {
     miningInfo = responseData;
   } catch (error) {
     console.error(
-      "Error fetch info from the pool wait 10 second and try again"
+      "Error fetch info from the pool wait 1 second and try again",error
     );
-    await sleep(10000);
+    await sleep(1000);
     return;
   }
   const latestBlock = miningInfo.latestBlock;
@@ -57,14 +57,17 @@ async function minePendingTransactions(miningRewardAddress) {
     const responseData = await response.json();
   } catch (error) {
     console.error(
-      "Error submitting block to the pool wait 10 second and try again"
+      "Error submitting block to the pool wait 1 second and try again"
     );
-    await sleep(10000);
+    await sleep(1000);
     return;
   }
 }
 
 function mineBlock(block) {
+  let startTime = Date.now();
+  let hashesTried = 0;
+
   while (
     block.hash.substring(0, block.difficulty) !==
     Array(block.difficulty + 1).join("0")
@@ -77,13 +80,27 @@ function mineBlock(block) {
       block.timestamp,
       block.nonce
     );
+    hashesTried++;
+
+    // Output rate every second
+    if (Date.now() - startTime > 1000) {
+      process.stdout.write(`\rHashing rate: ${hashesTried} hashes/sec`);
+      hashesTried = 0; // Reset the counter
+      startTime = Date.now(); // Reset the timestamp
+    }
   }
+
+  console.log('\n'); // New line to ensure subsequent outputs are on a new line
   console.log(
     `Block mined: ${block.hash} height: ${block.index} difficulty: ${block.difficulty} nonce: ${block.nonce}`
   );
   return block;
 }
+
+
+
 async function autoMine(miningRewardAddress) {
+
   while (true) {
     await minePendingTransactions(miningRewardAddress);
   }
