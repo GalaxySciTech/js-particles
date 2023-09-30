@@ -16,7 +16,8 @@ async function minePendingTransactions(miningRewardAddress) {
     miningInfo = responseData;
   } catch (error) {
     console.error(
-      "Error fetch info from the pool wait 1 second and try again",error
+      "Error fetch info from the pool wait 1 second and try again",
+      error
     );
     await sleep(1000);
     return;
@@ -90,17 +91,14 @@ function mineBlock(block) {
     }
   }
 
-  console.log('\n'); // New line to ensure subsequent outputs are on a new line
+  console.log("\n"); // New line to ensure subsequent outputs are on a new line
   console.log(
     `Block mined: ${block.hash} height: ${block.index} difficulty: ${block.difficulty} nonce: ${block.nonce}`
   );
   return block;
 }
 
-
-
 async function autoMine(miningRewardAddress) {
-
   while (true) {
     await minePendingTransactions(miningRewardAddress);
   }
@@ -108,6 +106,8 @@ async function autoMine(miningRewardAddress) {
 
 p2p.listen({ port: 3666 });
 
-autoMine(
-  process.env.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43"
-);
+if (process.env.isMiner) {
+  autoMine(
+    process.env.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43"
+  );
+}
