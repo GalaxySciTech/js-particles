@@ -149,6 +149,12 @@ class Blockchain {
           });
         }
       });
+      console.log(
+        "Block accepted. New block hash: " +
+          proposedBlock.hash +
+          " height: " +
+          proposedBlock.index
+      );
       await this.saveData();
       return true;
     } else {
