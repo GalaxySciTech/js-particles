@@ -1,7 +1,8 @@
 const { Blockchain } = require("./blockchain");
 
 const fastify = require("fastify")();
-
+const cors = require("@fastify/cors");
+fastify.register(cors);
 // Blockchain and Block class (as defined earlier)
 // ...
 const miners = new Set();
