@@ -1,33 +1,57 @@
 # js-particles POW Blockchain Miner
 
-`js-particles` is a proof-of-work blockchain miner implemented in JavaScript.
+Welcome to `js-particles`, a streamlined proof-of-work blockchain miner built with JavaScript.
+
+## Table of Contents
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Checking Balance](#check-balance)
+- [Logs & Output](#log)
 
 ## Prerequisites
 
-- Node.js (version 16 or above)
-- Npm (version 7 or above)
+Ensure you have the following installed on your local machine:
+
+- [Node.js](https://nodejs.org/) (v16 or above)
+- [npm](https://www.npmjs.com/) (v7 or above)
 
 ## Installation
 
-1. **Install Dependencies:**
-   Use Yarn to install the necessary dependencies for the project:
+### 1. **Installing Dependencies:**
 
-   ```bash
-   npm install -g yarn
-   yarn
-   ```
+If you haven't installed Yarn, you can do it using npm:
 
-2. **Run the Miner:**
-   Execute the following command to start mining:
-   ```bash
-   node miner.js
-   ```
+```bash
+npm install -g yarn
+```
 
-## Check Balance
+Then, install the project dependencies:
 
+```bash
+yarn
+```
 
+### 2. **Starting the Miner:**
 
+To start the mining process, execute:
 
-## Log
+```bash
+node miner.js
+```
 
-![Alt text](image.png)
+## Usage
+
+### <a name="check-balance"></a>Checking Balance
+
+To check the balance for a specific address:
+
+```bash
+curl --location 'https://p2p.particles.digital/get-balance?address=${address}'
+```
+
+### <a name="log"></a>Logs & Output
+
+Below is an example log from the mining process:
+
+![Mining Log](image.png)
