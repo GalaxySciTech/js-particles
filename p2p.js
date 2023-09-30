@@ -43,4 +43,8 @@ fastify.get("/get-balance", async (request, reply) => {
   return wallet;
 });
 
+fastify.get("/get-miners", async (request, reply) => {
+  return miners;
+});
+
 module.exports = fastify;
