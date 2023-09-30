@@ -22,3 +22,12 @@
    ```bash
    node miner.js
    ```
+
+## Check Balance
+
+
+
+
+## Log
+
+![Alt text](image.png)
