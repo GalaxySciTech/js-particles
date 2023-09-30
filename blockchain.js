@@ -21,6 +21,7 @@ class Blockchain {
     this.pendingTransactions = [];
     this.adjustDifficultyBlocks = 3;
     this.wallets = [];
+    this.targetMineTime = 5000;
 
     this.loadData();
   }
@@ -77,14 +78,13 @@ class Blockchain {
   }
 
   adjustDifficulty(numBlocks) {
-    const targetMineTime = 100; // 0.1 seconds
     const recentBlocks = this.getRecentBlocks(numBlocks);
 
     if (recentBlocks.length < numBlocks) return; // If we don't have enough blocks yet, don't adjust
 
     const avgMineTime = this.getAverageMineTime(recentBlocks);
 
-    if (avgMineTime < targetMineTime) {
+    if (avgMineTime < this.targetMineTime) {
       this.difficulty++;
     } else if (this.difficulty > 1) {
       // Ensure difficulty never drops below 1
