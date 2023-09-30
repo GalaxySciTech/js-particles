@@ -2,7 +2,7 @@ const { Block } = require("./blockchain");
 const fetch = require("node-fetch-npm");
 require("dotenv").config();
 const p2p = require("./p2p");
-const { calculateHash } = require("./utils");
+const { calculateHash, sleep } = require("./utils");
 
 async function minePendingTransactions(miningRewardAddress) {
   // Get latest block from the pool
@@ -15,7 +15,10 @@ async function minePendingTransactions(miningRewardAddress) {
     const responseData = await response.json();
     miningInfo = responseData;
   } catch (error) {
-    console.error("Error fetch info from the pool:", error);
+    console.error(
+      "Error fetch info from the pool wait 10 second and try again"
+    );
+    await sleep(10000);
     return;
   }
   const latestBlock = miningInfo.latestBlock;
@@ -53,7 +56,10 @@ async function minePendingTransactions(miningRewardAddress) {
 
     const responseData = await response.json();
   } catch (error) {
-    console.error("Error submitting block to the pool:", error);
+    console.error(
+      "Error submitting block to the pool wait 10 second and try again"
+    );
+    await sleep(10000);
     return;
   }
 }
