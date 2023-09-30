@@ -14,6 +14,12 @@ fastify.post("/submit-block", async (request, reply) => {
   const success = coin.mineBlock(proposedBlock);
 
   if (success) {
+    proposedBlock.data.forEach((tx) => {
+      if (tx.coninbase) {
+        miners.add(tx.coninbase);
+      }
+    });
+
     return { result: "Block accepted. Thank you for mining!" };
   } else {
     return { result: "Block rejected. Invalid solution." };
