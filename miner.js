@@ -1,6 +1,6 @@
 const { Block } = require("./blockchain");
 const fetch = require("node-fetch-npm");
-require("dotenv").config();
+const config = require("./config");
 const p2p = require("./p2p");
 const { calculateHash, sleep } = require("./utils");
 
@@ -8,7 +8,7 @@ async function minePendingTransactions(miningRewardAddress) {
   // Get latest block from the pool
   let miningInfo;
   try {
-    const response = await fetch(process.env.pool + "/get-mining-info", {
+    const response = await fetch(config.pool + "/get-mining-info", {
       method: "GET",
     });
 
@@ -47,7 +47,7 @@ async function minePendingTransactions(miningRewardAddress) {
 
   // Send mined block to the pool
   try {
-    const response = await fetch(process.env.pool + "/submit-block", {
+    const response = await fetch(config.pool + "/submit-block", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -106,8 +106,8 @@ async function autoMine(miningRewardAddress) {
 
 p2p.listen({ port: 3666 });
 
-if (process.env.isMiner == 1) {
+if (config.isMiner == 1) {
   autoMine(
-    process.env.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43"
+    config.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43"
   );
 }

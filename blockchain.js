@@ -1,5 +1,5 @@
 const { calculateHash } = require("./utils");
-const fs = require("fs").promises;
+const db = require("./db");
 
 class Block {
   constructor(index, timestamp, previousHash, hash, data, nonce, difficulty) {
@@ -15,15 +15,7 @@ class Block {
 
 class Blockchain {
   constructor() {
-    this.chain = [this.createGenesisBlock()];
-    this.difficulty = 1;
-    this.miningReward = 50;
-    this.pendingTransactions = [];
-    this.adjustDifficultyBlocks = 3;
-    this.wallets = [];
-    this.targetMineTime = 5000;
-
-    this.loadData();
+    this.init();
   }
 
   createGenesisBlock() {
@@ -38,8 +30,8 @@ class Blockchain {
     );
   }
 
-  isValidBlock(proposedBlock) {
-    const latestBlock = this.getLatestBlock();
+  async isValidBlock(proposedBlock) {
+    const latestBlock = await this.getLatestBlock();
 
     // Check if the block hash meets the difficulty requirement
     if (
@@ -73,34 +65,41 @@ class Blockchain {
     return true;
   }
 
-  getLatestBlock() {
-    return this.chain[this.chain.length - 1];
+  async getLatestBlock() {
+    const blocks = await db.find("blocks", {});
+
+    return blocks[blocks.length - 1];
   }
 
-  adjustDifficulty(numBlocks) {
-    const recentBlocks = this.getRecentBlocks(numBlocks);
+  async adjustDifficulty(numBlocks) {
+    const blockchain = await db.find("blockchain", {});
+    const difficulty = blockchain[0].difficulty;
+    const targetMineTime = blockchain[0].targetMineTime;
+    
+    const recentBlocks = await this.getRecentBlocks(numBlocks);
 
     if (recentBlocks.length < numBlocks) return; // If we don't have enough blocks yet, don't adjust
 
-    const avgMineTime = this.getAverageMineTime(recentBlocks);
+    const avgMineTime = await this.getAverageMineTime(recentBlocks);
 
-    if (avgMineTime < this.targetMineTime) {
-      this.difficulty++;
-    } else if (this.difficulty > 1) {
+    if (avgMineTime < targetMineTime) {
+      await db.update("blockchain", {}, { $inc: { difficulty: 1 } });
+    } else if (difficulty > 1) {
       // Ensure difficulty never drops below 1
-      this.difficulty--;
+      await db.update("blockchain", {}, { $inc: { difficulty: -1 } });
     }
   }
 
-  getRecentBlocks(n) {
-    if (this.chain.length <= n) {
-      return this.chain.slice(1); // Exclude genesis block
+  async getRecentBlocks(n) {
+    const blocks = await db.find("blocks", {});
+    if (blocks.length <= n) {
+      return blocks.slice(1); // Exclude genesis block
     } else {
-      return this.chain.slice(-n); // Get last n blocks
+      return blocks.slice(-n); // Get last n blocks
     }
   }
 
-  getAverageMineTime(blocks) {
+  async getAverageMineTime(blocks) {
     let total = 0;
 
     for (let i = 1; i < blocks.length; i++) {
@@ -110,62 +109,103 @@ class Blockchain {
     return total / (blocks.length - 1);
   }
 
-  async saveData() {
-    await fs.writeFile("./db.json", JSON.stringify(this, null, 2), "utf-8");
-  }
-
-  async loadData() {
-    try {
-      const data = await fs.readFile("./db.json", "utf-8");
-      const json = JSON.parse(data);
-      this.chain = json.chain;
-      this.adjustDifficultyBlocks = json.adjustDifficultyBlocks;
-      this.difficulty = json.difficulty;
-      this.miningReward = json.miningReward;
-      this.wallets = json.wallets;
-    } catch (e) {}
+  async init() {
+    const blockchain = await db.find("blockchain", {});
+    if (blockchain.length == 0) {
+      await db.insert("blockchain", [
+        {
+          name: "particles",
+          difficulty: 1,
+          miningReward: 50,
+          pendingTransactions: [],
+          adjustDifficultyBlocks: 3,
+          targetMineTime: 5000,
+        },
+      ]);
+    }
+    const blocks = await db.find("blocks", {});
+    if (blocks.length == 0) {
+      await db.insert("blocks", [this.createGenesisBlock()]);
+    }
+    const wallets = await db.find("wallets", {});
+    if (wallets.length == 0) {
+      await db.insert("wallets", []);
+    }
   }
 
   async mineBlock(proposedBlock) {
-    const isValidBlock = this.isValidBlock(proposedBlock);
+    const blockchain = await db.find("blockchain", {});
+    const adjustDifficultyBlocks = blockchain[0].adjustDifficultyBlocks;
+
+    const isValidBlock = await this.isValidBlock(proposedBlock);
 
     if (isValidBlock) {
-      this.chain.push(proposedBlock);
+      await db.insert("blocks", [proposedBlock]);
+
+      const blocks = await db.find("blocks", {});
 
       // In the minePendingTransactions method:
 
-      if ((this.chain.length - 1) % this.adjustDifficultyBlocks === 0) {
+      if ((blocks.length - 1) % adjustDifficultyBlocks === 0) {
         // Exclude genesis block in the count
-        this.adjustDifficulty(this.adjustDifficultyBlocks); // Adjust difficulty based on the last 10 blocks
+        await this.adjustDifficulty(adjustDifficultyBlocks); // Adjust difficulty based on the last 10 blocks
       }
-      proposedBlock.data.forEach((tx) => {
-        const wallet = this.wallets.find((w) => w.address === tx.coninbase);
-        if (wallet) {
-          wallet.balance += tx.amount;
-        } else {
-          this.wallets.push({
-            address: tx.coninbase,
-            balance: tx.amount,
-          });
-        }
-      });
+      if (!proposedBlock?.data) {
+        return false;
+      }
+      await Promise.all(
+        proposedBlock?.data?.forEach(async (tx) => {
+          if (tx?.coninbase) {
+            const wallet = await this.getBalanceOfAddress(tx.coninbase);
+            if (wallet.address) {
+              await db.update(
+                "wallets",
+                { address: tx.coninbase },
+                { $set: { balance: (wallet.balance += tx.amount) } }
+              );
+            } else {
+              await db.insert("wallets", [
+                {
+                  address: tx.coninbase,
+                  balance: tx.amount,
+                },
+              ]);
+            }
+          }
+        })
+      );
       console.log(
         "Block accepted. New block hash: " +
           proposedBlock.hash +
           " height: " +
           proposedBlock.index
       );
-      await this.saveData();
+
       return true;
     } else {
       return false;
     }
   }
 
-  getBalanceOfAddress(address) {
-    const wallet = this.wallets.find((w) => w.address === address);
-    return wallet;
+  async getBalanceOfAddress(address) {
+    const wallets = await db.find("wallets", { address: address });
+
+    return wallets?.[0] || {};
+  }
+
+  async miningInfo() {
+    const blockchain = await db.find("blockchain", {});
+    const blocks = await db.find("blocks", {});
+    const wallets = await db.find("wallets", {});
+    return {
+      minersSize: wallets.length,
+      difficulty: blockchain[0].difficulty,
+      latestBlock: blocks[blocks.length - 1],
+      adjustDifficultyBlocks: blockchain[0].adjustDifficultyBlocks,
+      miningReward: blockchain[0].miningReward,
+      pendingTransactions: blockchain[0].pendingTransactions,
+    };
   }
 }
 
-module.exports = { Blockchain, Block };
+module.exports = { Blockchain, Block, db };

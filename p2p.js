@@ -11,7 +11,7 @@ const coin = new Blockchain();
 fastify.post("/submit-block", async (request, reply) => {
   const proposedBlock = request.body;
 
-  const success = coin.mineBlock(proposedBlock);
+  const success = await coin.mineBlock(proposedBlock);
 
   if (success) {
     proposedBlock.data.forEach((tx) => {
@@ -27,14 +27,8 @@ fastify.post("/submit-block", async (request, reply) => {
 });
 
 fastify.get("/get-mining-info", async (request, reply) => {
-  return {
-    minersSize: miners.size,
-    difficulty: coin.difficulty,
-    latestBlock: coin.getLatestBlock(),
-    adjustDifficultyBlocks: coin.adjustDifficultyBlocks,
-    miningReward: coin.miningReward,
-    pendingTransactions: coin.pendingTransactions,
-  };
+  const info = await coin.miningInfo();
+  return info;
 });
 
 fastify.get("/get-balance", async (request, reply) => {
