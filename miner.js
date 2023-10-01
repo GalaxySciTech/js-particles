@@ -97,11 +97,11 @@ async function mineBlock(block) {
       hashesTried = 0; // Reset the counter
       startTime = Date.now(); // Reset the timestamp
     }
-    if (checkTime - Date.now() > 10000) {
+    if (checkTime - Date.now() > 5000) {
       const miningInfo = await getMiningInfo();
       if (!miningInfo) return;
       const latestBlock = miningInfo.latestBlock;
-      if (latestBlock.index > block.index) {
+      if (latestBlock.index >= block.index) {
         console.log("Block already mined by another miner");
         return;
       }
