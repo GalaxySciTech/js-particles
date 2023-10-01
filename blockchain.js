@@ -206,6 +206,10 @@ class Blockchain {
       pendingTransactions: blockchain[0].pendingTransactions,
     };
   }
+
+  async wallets() {
+    return await db.find("wallets", {});
+  }
 }
 
 module.exports = { Blockchain, Block, db };

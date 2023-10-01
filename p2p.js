@@ -38,7 +38,8 @@ fastify.get("/get-balance", async (request, reply) => {
 });
 
 fastify.get("/get-miners", async (request, reply) => {
-  return coin.wallets;
+  const wallets = await coin.wallets();
+  return wallets;
 });
 
 module.exports = fastify;
