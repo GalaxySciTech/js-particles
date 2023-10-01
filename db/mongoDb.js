@@ -20,6 +20,7 @@ const find = async (col, query) => {
 };
 
 const insert = async (col, datas) => {
+  if (datas.length == 0) return;
   const collection = database.collection(col);
   await collection.insertMany(datas);
 };

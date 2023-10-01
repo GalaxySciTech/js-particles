@@ -1,5 +1,5 @@
 const { calculateHash } = require("./utils");
-const db = require("./db");
+const db = require("./db/index.js");
 
 class Block {
   constructor(index, timestamp, previousHash, hash, data, nonce, difficulty) {
@@ -75,7 +75,7 @@ class Blockchain {
     const blockchain = await db.find("blockchain", {});
     const difficulty = blockchain[0].difficulty;
     const targetMineTime = blockchain[0].targetMineTime;
-    
+
     const recentBlocks = await this.getRecentBlocks(numBlocks);
 
     if (recentBlocks.length < numBlocks) return; // If we don't have enough blocks yet, don't adjust
@@ -161,7 +161,7 @@ class Blockchain {
               await db.update(
                 "wallets",
                 { address: tx.coninbase },
-                { $set: { balance: (wallet.balance += tx.amount) } }
+                { $inc: { balance: tx.amount } }
               );
             } else {
               await db.insert("wallets", [
