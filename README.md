@@ -1,6 +1,6 @@
 # js-particles POW Blockchain Miner
 
-Welcome to `js-particles`, a streamlined proof-of-work blockchain miner built with JavaScript.
+Welcome to `js-particles`, a proof-of-work blockchain miner built with JavaScript.
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
