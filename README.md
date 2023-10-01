@@ -3,11 +3,17 @@
 Welcome to `js-particles`, a proof-of-work blockchain miner built with JavaScript.
 
 ## Table of Contents
+
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Checking Balance](#check-balance)
 - [Logs & Output](#log)
+
+### Contract Configuration
+
+1. **Environment Variables**:
+   - Set up a `.env` file based on `.env.sample` and provide a valid private key.
 
 ## Prerequisites
 
