@@ -73,6 +73,7 @@ async function minePendingTransactions(miningRewardAddress) {
 }
 
 async function mineBlock(block) {
+  let checkTime = Date.now();
   let startTime = Date.now();
   let hashesTried = 0;
 
@@ -92,6 +93,11 @@ async function mineBlock(block) {
 
     // Output rate every second
     if (Date.now() - startTime > 1000) {
+      process.stdout.write(`\rHashing rate: ${hashesTried} hashes/sec`);
+      hashesTried = 0; // Reset the counter
+      startTime = Date.now(); // Reset the timestamp
+    }
+    if (checkTime - Date.now() > 10000) {
       const miningInfo = await getMiningInfo();
       if (!miningInfo) return;
       const latestBlock = miningInfo.latestBlock;
@@ -99,9 +105,7 @@ async function mineBlock(block) {
         console.log("Block already mined by another miner");
         return;
       }
-      process.stdout.write(`\rHashing rate: ${hashesTried} hashes/sec`);
-      hashesTried = 0; // Reset the counter
-      startTime = Date.now(); // Reset the timestamp
+      checkTime = Date.now();
     }
   }
 
@@ -117,7 +121,6 @@ async function autoMine(miningRewardAddress) {
     await minePendingTransactions(miningRewardAddress);
   }
 }
-
 p2p.listen({ port: 3666 });
 
 if (config.isMiner == 1) {
