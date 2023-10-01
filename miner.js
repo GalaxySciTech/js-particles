@@ -1,51 +1,11 @@
 const { Block } = require("./blockchain");
-const fetch = require("node-fetch-npm");
 const config = require("./config");
+const abi = require("./abi");
+const { calculateHash } = require("./utils");
 const p2p = require("./p2p");
-const { calculateHash, sleep } = require("./utils");
-
-// Get latest block from the pool
-async function getMiningInfo() {
-  let miningInfo;
-  try {
-    const response = await fetch(config.pool + "/get-mining-info", {
-      method: "GET",
-    });
-
-    const responseData = await response.json();
-    miningInfo = responseData;
-  } catch (error) {
-    console.error(
-      "Error fetch info from the pool wait 1 second and try again",
-      error
-    );
-    await sleep(1000);
-  }
-  return miningInfo;
-}
-
-async function submitBlock(block) {
-  // Send mined block to the pool
-  try {
-    const response = await fetch(config.pool + "/submit-block", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(block),
-    });
-
-    const responseData = await response.json();
-  } catch (error) {
-    console.error(
-      "Error submitting block to the pool wait 1 second and try again"
-    );
-    await sleep(1000);
-  }
-}
 
 async function minePendingTransactions(miningRewardAddress) {
-  const miningInfo = await getMiningInfo();
+  const miningInfo = await p2p.getMiningInfo();
   if (!miningInfo) return;
   const latestBlock = miningInfo.latestBlock;
   const difficulty = miningInfo.difficulty;
@@ -69,7 +29,7 @@ async function minePendingTransactions(miningRewardAddress) {
     difficulty
   );
   block = await mineBlock(block);
-  await submitBlock(block);
+  await p2p.submitBlock(block);
 }
 
 async function mineBlock(block) {
@@ -98,7 +58,7 @@ async function mineBlock(block) {
       startTime = Date.now(); // Reset the timestamp
     }
     if (checkTime - Date.now() > 5000) {
-      const miningInfo = await getMiningInfo();
+      const miningInfo = await p2p.getMiningInfo();
       if (!miningInfo) return;
       const latestBlock = miningInfo.latestBlock;
       if (latestBlock.index >= block.index) {
@@ -121,7 +81,9 @@ async function autoMine(miningRewardAddress) {
     await minePendingTransactions(miningRewardAddress);
   }
 }
-p2p.listen({ port: 3666 });
+
+
+abi.listen({ port: 3666 });
 
 if (config.isMiner == 1) {
   autoMine(config.minerAddress);

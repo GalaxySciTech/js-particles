@@ -1,45 +1,52 @@
-const { Blockchain } = require("./blockchain");
+const { sleep } = require("./utils");
+const fetch = require("node-fetch-npm");
+const config = require("./config");
 
-const fastify = require("fastify")();
-const cors = require("@fastify/cors");
-fastify.register(cors);
-// Blockchain and Block class (as defined earlier)
-// ...
-const miners = new Set();
-const coin = new Blockchain();
+// Get latest block from the pool
+async function getMiningInfo() {
+  return get(config.pool + "/get-mining-info");
+}
 
-fastify.post("/submit-block", async (request, reply) => {
-  const proposedBlock = request.body;
+async function submitBlock(block) {
+  return post(config.pool + "/submit-block", block);
+}
 
-  const success = await coin.mineBlock(proposedBlock);
+async function get(url) {
+  try {
+    const response = await fetch(url);
 
-  if (success) {
-    proposedBlock.data.forEach((tx) => {
-      if (tx.coninbase) {
-        miners.add(tx.coninbase);
-      }
+    const responseData = await response.json();
+    return responseData;
+  } catch (error) {
+    console.error(
+      "Error fetch info from the pool wait 1 second and try again",
+      error
+    );
+    await sleep(1000);
+  }
+}
+
+async function post(url, data) {
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
     });
 
-    return { result: "Block accepted. Thank you for mining!" };
-  } else {
-    return { result: "Block rejected. Invalid solution." };
+    const responseData = await response.json();
+    return responseData;
+  } catch (error) {
+    console.error(
+      "Error submitting block to the pool wait 1 second and try again"
+    );
+    await sleep(1000);
   }
-});
+}
 
-fastify.get("/get-mining-info", async (request, reply) => {
-  const info = await coin.miningInfo();
-  return info;
-});
-
-fastify.get("/get-balance", async (request, reply) => {
-  const address = request.query.address;
-  const wallet = coin.getBalanceOfAddress(address);
-  return wallet;
-});
-
-fastify.get("/get-miners", async (request, reply) => {
-  const wallets = await coin.wallets();
-  return wallets;
-});
-
-module.exports = fastify;
+module.exports = {
+  getMiningInfo,
+  submitBlock,
+};
