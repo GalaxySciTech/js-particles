@@ -63,15 +63,18 @@ class Blockchain {
 
     const blockchain = await db.find("blockchain", {});
 
-    for (const tx of proposedBlock.data) {
-      if (tx?.coninbase) {
-        if (tx.amount !== blockchain[0]["miningReward"]) {
-          console.log("Invalid mining reward");
-          return false;
-        }
-      }
+    const coinbase = proposedBlock?.data?.[0]?.coninbase;
+    const amount = proposedBlock?.data?.[0]?.amount;
+    // Check if the block height is correct
+    if (!coinbase) {
+      console.log("Block height is incorrect.");
+      return false;
     }
-
+    // Check if the block height is correct
+    if (amount != blockchain[0]["miningReward"]) {
+      console.log("Block height is incorrect.");
+      return false;
+    }
     // All checks passed
     return true;
   }
@@ -164,33 +167,31 @@ class Blockchain {
       if (!proposedBlock?.data) {
         return false;
       }
-      await Promise.all(
-        proposedBlock?.data?.map(async (tx) => {
-          if (tx?.coninbase) {
-            const wallet = await this.getBalanceOfAddress(tx.coninbase);
-            if (wallet.address) {
-              await db.update(
-                "wallets",
-                { address: tx.coninbase },
-                { $inc: { balance: tx.amount } }
-              );
-            } else {
-              await db.insert("wallets", [
-                {
-                  address: tx.coninbase,
-                  balance: tx.amount,
-                },
-              ]);
-            }
-          }
-        }) || []
-      );
+      const coinbase = proposedBlock?.data?.[0]?.coninbase;
+      const amount = proposedBlock?.data?.[0]?.amount;
+      const wallet = await this.getBalanceOfAddress(coinbase);
+      if (wallet.address) {
+        await db.update(
+          "wallets",
+          { address: coinbase },
+          { $inc: { balance: amount } }
+        );
+      } else {
+        await db.insert("wallets", [
+          {
+            address: coinbase,
+            balance: amount,
+          },
+        ]);
+      }
 
       console.log(
         "Block accepted. New block hash: " +
           proposedBlock.hash +
           " height: " +
-          proposedBlock.index
+          proposedBlock.index +
+          " coinbase: " +
+          proposedBlock.data[0]?.coninbase
       );
 
       return true;

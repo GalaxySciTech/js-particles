@@ -111,7 +111,7 @@ async function mineBlock(block) {
 
   console.log("\n"); // New line to ensure subsequent outputs are on a new line
   console.log(
-    `Block mined: ${block.hash} height: ${block.index} difficulty: ${block.difficulty} nonce: ${block.nonce}`
+    `Block mined: ${block.hash} height: ${block.index} difficulty: ${block.difficulty} nonce: ${block.nonce} coinbase :${block.data[0].coninbase}}`
   );
   return block;
 }
@@ -124,5 +124,5 @@ async function autoMine(miningRewardAddress) {
 p2p.listen({ port: 3666 });
 
 if (config.isMiner == 1) {
-  autoMine(config.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43");
+  autoMine(config.minerAddress);
 }
