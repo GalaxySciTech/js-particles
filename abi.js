@@ -42,4 +42,15 @@ fastify.get("/get-miners", async (request, reply) => {
   return wallets;
 });
 
+fastify.get("/get-blockchain", async (request, reply) => {
+  const blockchain = await coin.blockchain();
+  return blockchain;
+});
+
+fastify.get("/get-blocks", async (request, reply) => {
+  const index = request.query.index;
+  const blocks = await coin.blocks(index);
+  return blocks;
+});
+
 module.exports = fastify;

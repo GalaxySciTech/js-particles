@@ -1,7 +1,7 @@
 const { Block } = require("./blockchain");
 const config = require("./config");
 const abi = require("./abi");
-const { calculateHash } = require("./utils");
+const { calculateHash, sleep } = require("./utils");
 const p2p = require("./p2p");
 
 async function minePendingTransactions(miningRewardAddress) {
@@ -76,15 +76,22 @@ async function mineBlock(block) {
   return block;
 }
 
-async function autoMine(miningRewardAddress) {
-  while (true) {
-    await minePendingTransactions(miningRewardAddress);
+async function main() {
+  if (config.isMiner == 1) {
+    const minerAddress = config.minerAddress;
+    await abi.ready();
+    while (true) {
+      try {
+        await minePendingTransactions(minerAddress);
+      } catch (e) {
+        console.log("sleep 1 second for error :", e);
+        await sleep(1000);
+        await autoMine(minerAddress);
+      }
+    }
   }
 }
 
-
 abi.listen({ port: 3666 });
 
-if (config.isMiner == 1) {
-  autoMine(config.minerAddress);
-}
+main();

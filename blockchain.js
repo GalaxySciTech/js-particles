@@ -223,6 +223,15 @@ class Blockchain {
   async wallets() {
     return await db.find("wallets", {});
   }
+
+  async blockchain() {
+    return db.find("blockchain", {})?.[0] || {};
+  }
+
+  async blocks(index) {
+    const blocks = await db.find("blocks", { index });
+    return blocks?.[0] || {};
+  }
 }
 
 module.exports = { Blockchain, Block, db };

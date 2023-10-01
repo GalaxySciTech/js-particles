@@ -18,11 +18,7 @@ async function get(url) {
     const responseData = await response.json();
     return responseData;
   } catch (error) {
-    console.error(
-      "Error fetch info from the pool wait 1 second and try again",
-      error
-    );
-    await sleep(1000);
+    throw Error("fetch data from pool falied " + error);
   }
 }
 
@@ -39,10 +35,7 @@ async function post(url, data) {
     const responseData = await response.json();
     return responseData;
   } catch (error) {
-    console.error(
-      "Error submitting block to the pool wait 1 second and try again"
-    );
-    await sleep(1000);
+    throw Error("fetch data from pool falied " + error);
   }
 }
 
