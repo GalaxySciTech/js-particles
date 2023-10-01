@@ -63,7 +63,8 @@ class Blockchain {
 
     const blockchain = await db.find("blockchain", {});
 
-    for (tx of proposedBlock.data) {
+    console.log(proposedBlock);
+    for (const tx of proposedBlock.data) {
       if (tx?.coninbase) {
         if (tx.amount !== blockchain[0]["miningReward"]) {
           console.log("Invalid mining reward");
