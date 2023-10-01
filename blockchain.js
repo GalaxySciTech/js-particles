@@ -61,6 +61,17 @@ class Blockchain {
       return false;
     }
 
+    const blockchain = await db.find("blockchain", {});
+
+    for (tx of proposedBlock.data) {
+      if (tx?.coninbase) {
+        if (tx.amount !== blockchain[0]["miningReward"]) {
+          console.log("Invalid mining reward");
+          return false;
+        }
+      }
+    }
+
     // All checks passed
     return true;
   }
@@ -171,6 +182,7 @@ class Blockchain {
                 },
               ]);
             }
+            return;
           }
         })
       );
