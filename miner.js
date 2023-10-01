@@ -4,8 +4,8 @@ const config = require("./config");
 const p2p = require("./p2p");
 const { calculateHash, sleep } = require("./utils");
 
-async function minePendingTransactions(miningRewardAddress) {
-  // Get latest block from the pool
+// Get latest block from the pool
+async function getMiningInfo() {
   let miningInfo;
   try {
     const response = await fetch(config.pool + "/get-mining-info", {
@@ -20,8 +20,33 @@ async function minePendingTransactions(miningRewardAddress) {
       error
     );
     await sleep(1000);
-    return;
   }
+  return miningInfo;
+}
+
+async function submitBlock(block) {
+  // Send mined block to the pool
+  try {
+    const response = await fetch(config.pool + "/submit-block", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(block),
+    });
+
+    const responseData = await response.json();
+  } catch (error) {
+    console.error(
+      "Error submitting block to the pool wait 1 second and try again"
+    );
+    await sleep(1000);
+  }
+}
+
+async function minePendingTransactions(miningRewardAddress) {
+  const miningInfo = await getMiningInfo();
+  if (!miningInfo) return;
   const latestBlock = miningInfo.latestBlock;
   const difficulty = miningInfo.difficulty;
   const miningReward = miningInfo.miningReward;
@@ -43,29 +68,11 @@ async function minePendingTransactions(miningRewardAddress) {
     0,
     difficulty
   );
-  block = mineBlock(block);
-
-  // Send mined block to the pool
-  try {
-    const response = await fetch(config.pool + "/submit-block", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(block),
-    });
-
-    const responseData = await response.json();
-  } catch (error) {
-    console.error(
-      "Error submitting block to the pool wait 1 second and try again"
-    );
-    await sleep(1000);
-    return;
-  }
+  block = await mineBlock(block);
+  await submitBlock(block);
 }
 
-function mineBlock(block) {
+async function mineBlock(block) {
   let startTime = Date.now();
   let hashesTried = 0;
 
@@ -85,6 +92,13 @@ function mineBlock(block) {
 
     // Output rate every second
     if (Date.now() - startTime > 1000) {
+      const miningInfo = await getMiningInfo();
+      if (!miningInfo) return;
+      const latestBlock = miningInfo.latestBlock;
+      if (latestBlock.index > block.index) {
+        console.log("Block already mined by another miner");
+        return;
+      }
       process.stdout.write(`\rHashing rate: ${hashesTried} hashes/sec`);
       hashesTried = 0; // Reset the counter
       startTime = Date.now(); // Reset the timestamp
@@ -107,7 +121,5 @@ async function autoMine(miningRewardAddress) {
 p2p.listen({ port: 3666 });
 
 if (config.isMiner == 1) {
-  autoMine(
-    config.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43"
-  );
+  autoMine(config.minerAddress || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43");
 }

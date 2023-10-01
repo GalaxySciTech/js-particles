@@ -63,7 +63,6 @@ class Blockchain {
 
     const blockchain = await db.find("blockchain", {});
 
-    console.log(proposedBlock);
     for (const tx of proposedBlock.data) {
       if (tx?.coninbase) {
         if (tx.amount !== blockchain[0]["miningReward"]) {
@@ -166,7 +165,7 @@ class Blockchain {
         return false;
       }
       await Promise.all(
-        proposedBlock?.data?.forEach(async (tx) => {
+        proposedBlock?.data?.map(async (tx) => {
           if (tx?.coninbase) {
             const wallet = await this.getBalanceOfAddress(tx.coninbase);
             if (wallet.address) {
@@ -183,10 +182,10 @@ class Blockchain {
                 },
               ]);
             }
-            return;
           }
-        })
+        }) || []
       );
+
       console.log(
         "Block accepted. New block hash: " +
           proposedBlock.hash +
