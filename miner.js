@@ -86,7 +86,7 @@ async function main() {
       } catch (e) {
         console.log("sleep 1 second for error :", e);
         await sleep(1000);
-        await autoMine(minerAddress);
+        await main();
       }
     }
   }

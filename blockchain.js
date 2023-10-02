@@ -220,6 +220,10 @@ class Blockchain {
     };
   }
 
+  async sync() {
+    
+  }
+
   async wallets() {
     return await db.find("wallets", {});
   }
