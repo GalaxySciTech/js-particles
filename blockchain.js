@@ -63,7 +63,12 @@ class Blockchain {
 
     const blockchain = await db.find("blockchain", {});
 
-    const coinbase = proposedBlock?.data?.[0]?.coninbase;
+    const keys = Object.keys(proposedBlock?.data?.[0])
+    if(keys.length !== 2 || !keys.includes('coinbase', 'amount')) {
+      return false;
+    }
+
+    const coinbase = proposedBlock?.data?.[0]?.coinbase;
     const amount = proposedBlock?.data?.[0]?.amount;
     // Check if the block height is correct
     if (!coinbase) {
@@ -167,7 +172,7 @@ class Blockchain {
       if (!proposedBlock?.data) {
         return false;
       }
-      const coinbase = proposedBlock?.data?.[0]?.coninbase;
+      const coinbase = proposedBlock?.data?.[0]?.coinbase;
       const amount = proposedBlock?.data?.[0]?.amount;
       const wallet = await this.getBalanceOfAddress(coinbase);
       if (wallet.address) {
@@ -191,7 +196,7 @@ class Blockchain {
           " height: " +
           proposedBlock.index +
           " coinbase: " +
-          proposedBlock.data[0]?.coninbase
+          proposedBlock.data[0]?.coinbase
       );
 
       return true;

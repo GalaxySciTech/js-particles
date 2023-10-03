@@ -12,11 +12,11 @@ async function minePendingTransactions(miningRewardAddress) {
   const miningReward = miningInfo.miningReward;
   const pendingTransactions = miningInfo.pendingTransactions;
 
-  const coninbaseTx = {
-    coninbase: miningRewardAddress,
+  const coinbaseTx = {
+    coinbase: miningRewardAddress,
     amount: miningReward,
   };
-  pendingTransactions.push(coninbaseTx);
+  pendingTransactions.unshift(coinbaseTx);
 
   const index = latestBlock.index + 1;
   let block = new Block(
@@ -71,7 +71,7 @@ async function mineBlock(block) {
 
   console.log("\n"); // New line to ensure subsequent outputs are on a new line
   console.log(
-    `Block mined: ${block.hash} height: ${block.index} difficulty: ${block.difficulty} nonce: ${block.nonce} coinbase :${block.data[0].coninbase}}`
+    `Block mined: ${block.hash} height: ${block.index} difficulty: ${block.difficulty} nonce: ${block.nonce} coinbase: ${block.data[0].coinbase}`
   );
   return block;
 }
