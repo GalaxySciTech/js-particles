@@ -48,7 +48,7 @@ fastify.get("/get-blockchain", async (request, reply) => {
 });
 
 fastify.get("/get-blocks", async (request, reply) => {
-  const index = request.query.index;
+  const index = parseInt(request.query.index);
   const blocks = await coin.blocks(index);
   return blocks;
 });
