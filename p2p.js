@@ -4,16 +4,20 @@ const config = require("./config");
 
 // Get latest block from the pool
 async function getMiningInfo() {
-  return get(config.pool + "/get-mining-info");
+  return get("/get-mining-info");
 }
 
 async function submitBlock(block) {
-  return post(config.pool + "/submit-block", block);
+  return post("/submit-block", block);
+}
+
+async function sync() {
+  await get("/get-blockchain");
 }
 
 async function get(url) {
   try {
-    const response = await fetch(url);
+    const response = await fetch(config.pool + url);
 
     const responseData = await response.json();
     return responseData;
@@ -24,7 +28,7 @@ async function get(url) {
 
 async function post(url, data) {
   try {
-    const response = await fetch(url, {
+    const response = await fetch(config.pool + url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
