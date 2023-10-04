@@ -229,10 +229,6 @@ async function wallets() {
   return await db.find("wallets", {});
 }
 
-async function blockchain() {
-  return db.find("blockchain", {})?.[0] || {};
-}
-
 async function blocks(index) {
   const blocks = await db.find("blocks", { index });
   return blocks?.[0] || {};

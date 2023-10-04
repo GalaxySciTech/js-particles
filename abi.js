@@ -37,11 +37,6 @@ fastify.get("/get-miners", async (request, reply) => {
   return wallets;
 });
 
-fastify.get("/get-blockchain", async (request, reply) => {
-  const blockchain = await blockchain.blockchain();
-  return blockchain;
-});
-
 fastify.get("/get-blocks", async (request, reply) => {
   const index = parseInt(request.query.index);
   const blocks = await blockchain.blocks(index);
