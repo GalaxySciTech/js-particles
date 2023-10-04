@@ -1,46 +1,60 @@
-const { Block } = require("./blockchain");
+const blockchain = require("./blockchain");
 const config = require("./config");
 const abi = require("./abi");
 const { calculateHash, sleep } = require("./utils");
 const p2p = require("./p2p");
+const Block = require("./block");
 
 async function minePendingTransactions(miningRewardAddress) {
   const miningInfo = await p2p.getMiningInfo();
   if (!miningInfo) return;
+  const blockchain = miningInfo.blockchain;
   const latestBlock = miningInfo.latestBlock;
-  const difficulty = miningInfo.difficulty;
-  const miningReward = miningInfo.miningReward;
   const pendingTransactions = miningInfo.pendingTransactions;
 
-  const coninbaseTx = {
-    coninbase: miningRewardAddress,
-    amount: miningReward,
+  const coinbaseTx = {
+    coinbase: miningRewardAddress,
+    amount: blockchain.miningReward,
   };
-  pendingTransactions.push(coninbaseTx);
+  pendingTransactions.push(coinbaseTx);
 
-  const index = latestBlock.index + 1;
-  let block = new Block(
+  const index = (latestBlock.index || 0) + 1;
+  let block = Block(
     index,
     Date.now(),
     latestBlock.hash,
     "",
     pendingTransactions,
     0,
-    difficulty
+    blockchain.difficulty
   );
   block = await mineBlock(block);
-  await p2p.submitBlock(block);
+  const res = await p2p.submitBlock(block);
+  const result = res?.result;
+  console.log(
+    "block hash",
+    block.hash,
+    "height",
+    index,
+    "miner",
+    miningRewardAddress,
+    result
+  );
 }
 
 async function mineBlock(block) {
   let checkTime = Date.now();
   let startTime = Date.now();
   let hashesTried = 0;
+  block.hash = calculateHash(
+    block.index,
+    block.previousHash,
+    block.data,
+    block.timestamp,
+    block.nonce
+  );
 
-  while (
-    block.hash.substring(0, block.difficulty) !==
-    Array(block.difficulty + 1).join("0")
-  ) {
+  while (BigInt("0x" + block.hash) >= BigInt(block.difficulty)) {
     block.nonce++;
     block.hash = calculateHash(
       block.index,
@@ -68,15 +82,11 @@ async function mineBlock(block) {
       checkTime = Date.now();
     }
   }
-
-  console.log("\n"); // New line to ensure subsequent outputs are on a new line
-  console.log(
-    `Block mined: ${block.hash} height: ${block.index} difficulty: ${block.difficulty} nonce: ${block.nonce} coinbase :${block.data[0].coninbase}`
-  );
   return block;
 }
 
 async function main() {
+  await blockchain.init();
   if (config.isMiner == 1) {
     const minerAddress = config.minerAddress;
     await abi.ready();
@@ -89,6 +99,8 @@ async function main() {
         await main();
       }
     }
+  } else {
+    await blockchain.init();
   }
 }
 

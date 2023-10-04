@@ -1,241 +1,253 @@
-const { calculateHash } = require("./utils");
+const { calculateHash, getRoot } = require("./utils");
 const db = require("./db/index.js");
+const Block = require("./block.js");
+const extendWallet = require("./wallets.json");
 
-class Block {
-  constructor(index, timestamp, previousHash, hash, data, nonce, difficulty) {
-    this.index = index; // block height
-    this.timestamp = timestamp;
-    this.previousHash = previousHash;
-    this.hash = hash;
-    this.data = data;
-    this.nonce = nonce;
-    this.difficulty = difficulty;
+function createGenesisBlock() {
+  return Block(
+    0,
+    0,
+    "0",
+    calculateHash(0, "0", 0, 0),
+    "Genesis Block",
+    0,
+    Number("0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+  );
+}
+
+async function getBlockChain() {
+  const blockchain = await db.find("blockchain", {});
+  return blockchain[0];
+}
+
+async function isValidBlock(proposedBlock) {
+  const latestBlock = await getLatestBlock();
+  const blockchain = await getBlockChain();
+
+  if (blockchain.difficulty != proposedBlock.difficulty) {
+    console.log("Block difficulty does not match latest block.");
+    return false;
+  }
+  // Check if the block hash meets the difficulty requirement
+  if (BigInt("0x" + proposedBlock.hash) >= BigInt(proposedBlock.difficulty)) {
+    console.log("Block hash does not meet difficulty requirements.");
+    return false;
+  }
+
+  // Check if the block's hash matches its contents
+  const proposedBlockHash = calculateHash(
+    proposedBlock.index,
+    proposedBlock.previousHash,
+    proposedBlock.data,
+    proposedBlock.timestamp,
+    proposedBlock.nonce
+  );
+  if (proposedBlockHash !== proposedBlock.hash) {
+    console.log("Block hash does not match block contents.");
+    return false;
+  }
+
+  // Check if the previous hash matches the hash of the latest block on the chain
+  if (proposedBlock.previousHash !== latestBlock.hash) {
+    console.log("Previous hash does not match hash of the latest block.");
+    return false;
+  }
+
+  const data = proposedBlock?.data;
+  if (data.length == 0) {
+    console.log("Block data is incorrect.");
+    return false;
+  }
+
+  const last = data[data.length - 1];
+
+  const miningReward = blockchain["miningReward"];
+
+  const coinbase = last?.coinbase;
+  const amount = last?.amount;
+  // Check if the block height is correct
+  if (!coinbase) {
+    console.log("Block height is incorrect.");
+    return false;
+  }
+  // Check if the block height is correct
+  if (amount != miningReward) {
+    console.log("Block height is incorrect.");
+    return false;
+  }
+  // All checks passed
+  return true;
+}
+
+async function getLatestBlock() {
+  const blocks = await db.find("blocks", {});
+
+  return blocks[blocks.length - 1];
+}
+
+async function getRecentBlocks(n) {
+  const blocks = await db.find("blocks", {});
+  if (blocks.length <= n) {
+    return blocks.slice(1); // Exclude genesis block
+  } else {
+    return blocks.slice(-n); // Get last n blocks
   }
 }
 
-class Blockchain {
-  constructor() {
-    this.init();
+async function getAverageMineTime(blocks) {
+  let total = 0;
+
+  for (let i = 1; i < blocks.length; i++) {
+    total += blocks[i].timestamp - blocks[i - 1].timestamp;
+  }
+  for (let i = 1; i < blocks.length; i++) {
+    total += blocks[i].timestamp - blocks[i - 1].timestamp;
   }
 
-  createGenesisBlock() {
-    return new Block(
-      0,
-      0,
-      "0",
-      calculateHash(0, "0", 0, 0),
-      "Genesis Block",
-      0,
-      this.difficulty
+  return total / (blocks.length - 1);
+}
+
+async function adjustDifficulty() {
+  const blockchain = await getBlockChain();
+  const targetMineTime = blockchain.targetMineTime;
+
+  const latestBlock = await getLatestBlock();
+
+  const difficulty = latestBlock.difficulty;
+
+  const blocks = await getRecentBlocks(10);
+
+  const avgMineTime = await getAverageMineTime(blocks);
+
+  const changeDifficulty = Math.floor(difficulty * 0.1);
+  if (avgMineTime < targetMineTime) {
+    await db.update(
+      "blockchain",
+      {},
+      { $inc: { difficulty: -changeDifficulty } }
+    );
+  } else if (difficulty > changeDifficulty) {
+    // Ensure difficulty never drops below 1
+    await db.update(
+      "blockchain",
+      {},
+      { $inc: { difficulty: changeDifficulty } }
     );
   }
+}
 
-  async isValidBlock(proposedBlock) {
-    const latestBlock = await this.getLatestBlock();
+async function init() {
+  const genesis = createGenesisBlock();
+  const blockchain = await db.find("blockchain", {});
+  if (blockchain.length == 0) {
+    await db.insert("blockchain", [
+      {
+        name: "particles",
+        miningReward: 50,
+        targetMineTime: 5000,
+        difficulty: genesis.difficulty,
+      },
+    ]);
+    const wallets = extendWallet.map((item) => {
+      item["balance"] = Number(item["balance"]);
+      return item;
+    });
+    await db.insert("wallets", wallets);
 
-    // Check if the block hash meets the difficulty requirement
-    if (
-      proposedBlock.hash.substring(0, proposedBlock.difficulty) !==
-      Array(proposedBlock.difficulty + 1).join("0")
-    ) {
-      console.log("Block hash does not meet difficulty requirements.");
-      return false;
-    }
-
-    // Check if the block's hash matches its contents
-    const proposedBlockHash = calculateHash(
-      proposedBlock.index,
-      proposedBlock.previousHash,
-      proposedBlock.data,
-      proposedBlock.timestamp,
-      proposedBlock.nonce
-    );
-    if (proposedBlockHash !== proposedBlock.hash) {
-      console.log("Block hash does not match block contents.");
-      return false;
-    }
-
-    // Check if the previous hash matches the hash of the latest block on the chain
-    if (proposedBlock.previousHash !== latestBlock.hash) {
-      console.log("Previous hash does not match hash of the latest block.");
-      return false;
-    }
-
-    const blockchain = await db.find("blockchain", {});
-
-    const coinbase = proposedBlock?.data?.[0]?.coninbase;
-    const amount = proposedBlock?.data?.[0]?.amount;
-    // Check if the block height is correct
-    if (!coinbase) {
-      console.log("Block height is incorrect.");
-      return false;
-    }
-    // Check if the block height is correct
-    if (amount != blockchain[0]["miningReward"]) {
-      console.log("Block height is incorrect.");
-      return false;
-    }
-    // All checks passed
-    return true;
+    const stateRoot = getRoot(wallets);
+    genesis["stateRoot"] = stateRoot;
+    await db.insert("blocks", [genesis]);
   }
+}
 
-  async getLatestBlock() {
-    const blocks = await db.find("blocks", {});
+async function mineBlock(proposedBlock) {
+  const valid = await isValidBlock(proposedBlock);
 
-    return blocks[blocks.length - 1];
-  }
-
-  async adjustDifficulty(numBlocks) {
-    const blockchain = await db.find("blockchain", {});
-    const difficulty = blockchain[0].difficulty;
-    const targetMineTime = blockchain[0].targetMineTime;
-
-    const recentBlocks = await this.getRecentBlocks(numBlocks);
-
-    if (recentBlocks.length < numBlocks) return; // If we don't have enough blocks yet, don't adjust
-
-    const avgMineTime = await this.getAverageMineTime(recentBlocks);
-
-    if (avgMineTime < targetMineTime) {
-      await db.update("blockchain", {}, { $inc: { difficulty: 1 } });
-    } else if (difficulty > 1) {
-      // Ensure difficulty never drops below 1
-      await db.update("blockchain", {}, { $inc: { difficulty: -1 } });
+  if (valid) {
+    const data = proposedBlock?.data;
+    if (!data) {
+      return false;
     }
-  }
+    const last = data[data.length - 1];
 
-  async getRecentBlocks(n) {
-    const blocks = await db.find("blocks", {});
-    if (blocks.length <= n) {
-      return blocks.slice(1); // Exclude genesis block
+    const coinbase = last?.coinbase;
+    const amount = last?.amount;
+
+    const wallet = await getBalanceOfAddress(coinbase);
+    if (wallet.address) {
+      await db.update(
+        "wallets",
+        { address: coinbase },
+        { $inc: { balance: amount } }
+      );
     } else {
-      return blocks.slice(-n); // Get last n blocks
-    }
-  }
-
-  async getAverageMineTime(blocks) {
-    let total = 0;
-
-    for (let i = 1; i < blocks.length; i++) {
-      total += blocks[i].timestamp - blocks[i - 1].timestamp;
-    }
-
-    return total / (blocks.length - 1);
-  }
-
-  async init() {
-    const blockchain = await db.find("blockchain", {});
-    if (blockchain.length == 0) {
-      await db.insert("blockchain", [
+      await db.insert("wallets", [
         {
-          name: "particles",
-          difficulty: 1,
-          miningReward: 50,
-          pendingTransactions: [],
-          adjustDifficultyBlocks: 3,
-          targetMineTime: 5000,
+          address: coinbase,
+          balance: amount,
         },
       ]);
     }
-    const blocks = await db.find("blocks", {});
-    if (blocks.length == 0) {
-      await db.insert("blocks", [this.createGenesisBlock()]);
-    }
-    const wallets = await db.find("wallets", {});
-    if (wallets.length == 0) {
-      await db.insert("wallets", []);
-    }
-  }
-
-  async mineBlock(proposedBlock) {
-    const blockchain = await db.find("blockchain", {});
-    const adjustDifficultyBlocks = blockchain[0].adjustDifficultyBlocks;
-
-    const isValidBlock = await this.isValidBlock(proposedBlock);
-
-    if (isValidBlock) {
-      await db.insert("blocks", [proposedBlock]);
-
-      const blocks = await db.find("blocks", {});
-
-      // In the minePendingTransactions method:
-
-      if ((blocks.length - 1) % adjustDifficultyBlocks === 0) {
-        // Exclude genesis block in the count
-        await this.adjustDifficulty(adjustDifficultyBlocks); // Adjust difficulty based on the last 10 blocks
-      }
-      if (!proposedBlock?.data) {
-        return false;
-      }
-      const coinbase = proposedBlock?.data?.[0]?.coninbase;
-      const amount = proposedBlock?.data?.[0]?.amount;
-      const wallet = await this.getBalanceOfAddress(coinbase);
-      if (wallet.address) {
-        await db.update(
-          "wallets",
-          { address: coinbase },
-          { $inc: { balance: amount } }
-        );
-      } else {
-        await db.insert("wallets", [
-          {
-            address: coinbase,
-            balance: amount,
-          },
-        ]);
-      }
-
-      console.log(
-        "Block accepted. New block hash: " +
-          proposedBlock.hash +
-          " height: " +
-          proposedBlock.index +
-          " coinbase: " +
-          proposedBlock.data[0]?.coninbase
-      );
-
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  async getBalanceOfAddress(address) {
-    const wallets = await db.find("wallets", { address: address });
-
-    return wallets?.[0] || {};
-  }
-
-  async miningInfo() {
-    const blockchain = await db.find("blockchain", {});
-    const blocks = await db.find("blocks", {});
-    const wallets = await db.find("wallets", {});
-    return {
-      minersSize: wallets.length,
-      difficulty: blockchain[0].difficulty,
-      latestBlock: blocks[blocks.length - 1],
-      adjustDifficultyBlocks: blockchain[0].adjustDifficultyBlocks,
-      miningReward: blockchain[0].miningReward,
-      pendingTransactions: blockchain[0].pendingTransactions,
-    };
-  }
-
-  async sync() {
-    
-  }
-
-  async wallets() {
-    return await db.find("wallets", {});
-  }
-
-  async blockchain() {
-    return db.find("blockchain", {})?.[0] || {};
-  }
-
-  async blocks(index) {
-    const blocks = await db.find("blocks", { index });
-    return blocks?.[0] || {};
+    const wallets = await getWallets();
+    const stateRoot = getRoot(wallets);
+    proposedBlock["stateRoot"] = stateRoot;
+    await db.insert("blocks", [proposedBlock]);
+    console.log(
+      "Block accepted. New block hash: " +
+        proposedBlock.hash +
+        " height: " +
+        proposedBlock.index +
+        " coinbase: " +
+        proposedBlock.data[0]?.coinbase
+    );
+    await adjustDifficulty();
+    return true;
+  } else {
+    return false;
   }
 }
 
-module.exports = { Blockchain, Block, db };
+async function getBalanceOfAddress(address) {
+  const wallets = await db.find("wallets", { address: address });
+
+  return wallets?.[0] || {};
+}
+
+async function miningInfo() {
+  const blockchain = await getBlockChain();
+  const latestBlock = await getLatestBlock();
+  const wallets = await db.find("wallets", {});
+  const pendingTransactions = await db.find("pendingTransactions", {});
+  return {
+    blockchain,
+    latestBlock,
+    minersSize: wallets.length,
+    pendingTransactions: pendingTransactions,
+  };
+}
+
+async function sync() {}
+
+async function getWallets() {
+  return await db.find("wallets", {});
+}
+
+async function blocks(index) {
+  const blocks = await db.find("blocks", { index });
+  return blocks?.[0] || {};
+}
+
+module.exports = {
+  Block,
+  createGenesisBlock,
+  isValidBlock,
+  getLatestBlock,
+  adjustDifficulty,
+  init,
+  mineBlock,
+  getBalanceOfAddress,
+  miningInfo,
+  sync,
+  getWallets,
+  blocks,
+};
