@@ -62,7 +62,7 @@ async function isValidBlock(proposedBlock) {
 
   const miningReward = blockchain["miningReward"];
 
-  const coinbase = last?.coinbase || last?.coninbase;
+  const coinbase = last?.coinbase;
   const amount = last?.amount;
   // Check if the block height is correct
   if (!coinbase) {
@@ -146,7 +146,7 @@ async function mineBlock(proposedBlock) {
     }
     const last = data[data.length - 1];
 
-    const coinbase = last?.coinbase || last?.coninbase;
+    const coinbase = last?.coinbase;
     const amount = last?.amount;
 
     const wallet = await getBalanceOfAddress(coinbase);
