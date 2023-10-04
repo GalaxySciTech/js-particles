@@ -84,6 +84,28 @@ async function getLatestBlock() {
   return blocks[blocks.length - 1];
 }
 
+async function getRecentBlocks(n) {
+  const blocks = await db.find("blocks", {});
+  if (blocks.length <= n) {
+    return blocks.slice(1); // Exclude genesis block
+  } else {
+    return blocks.slice(-n); // Get last n blocks
+  }
+}
+
+async function getAverageMineTime(blocks) {
+  let total = 0;
+
+  for (let i = 1; i < blocks.length; i++) {
+    total += blocks[i].timestamp - blocks[i - 1].timestamp;
+  }
+  for (let i = 1; i < blocks.length; i++) {
+    total += blocks[i].timestamp - blocks[i - 1].timestamp;
+  }
+
+  return total / (blocks.length - 1);
+}
+
 async function adjustDifficulty() {
   const blockchain = await getBlockChain();
   const targetMineTime = blockchain.targetMineTime;
@@ -92,7 +114,9 @@ async function adjustDifficulty() {
 
   const difficulty = latestBlock.difficulty;
 
-  const avgMineTime = Date.now() - latestBlock.timestamp;
+  const blocks = await getRecentBlocks(10);
+
+  const avgMineTime = await getAverageMineTime(blocks);
 
   const changeDifficulty = Math.floor(difficulty * 0.1);
   if (avgMineTime < targetMineTime) {
