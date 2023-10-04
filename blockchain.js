@@ -144,7 +144,7 @@ async function init() {
       {
         name: "particles",
         miningReward: 50,
-        targetMineTime: 500,
+        targetMineTime: 5000,
         difficulty: genesis.difficulty,
       },
     ]);
