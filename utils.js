@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const secp256k1 = require("secp256k1");
 const keccak256 = require("keccak256");
+const { MerkleTree } = require("merkletreejs");
 
 function addressFromPublicKey(publicKey) {
   const addressBuffer = keccak256(Buffer.from(publicKey));
@@ -48,6 +49,13 @@ function sleep(time) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
 
+function getRoot(list) {
+  const leaves = list.map((x) => keccak256(JSON.stringify(x)));
+  const tree = new MerkleTree(leaves, keccak256);
+  const root = tree.getRoot().toString("hex");
+  return root;
+}
+
 module.exports = {
   calculateHash,
   sleep,
@@ -55,4 +63,5 @@ module.exports = {
   sign,
   recoveryFromSig,
   addressFromPublicKey,
+  getRoot,
 };

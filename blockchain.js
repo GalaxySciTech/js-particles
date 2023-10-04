@@ -1,6 +1,7 @@
-const { calculateHash } = require("./utils");
+const { calculateHash, getRoot } = require("./utils");
 const db = require("./db/index.js");
 const Block = require("./block.js");
+const extendWallet = require("./wallets.json");
 
 function createGenesisBlock() {
   return Block(
@@ -147,14 +148,15 @@ async function init() {
         difficulty: genesis.difficulty,
       },
     ]);
-  }
-  const blocks = await db.find("blocks", {});
-  if (blocks.length == 0) {
-    await db.insert("blocks", [createGenesisBlock()]);
-  }
-  const wallets = await db.find("wallets", {});
-  if (wallets.length == 0) {
-    await db.insert("wallets", []);
+    const wallets = extendWallet.map((item) => {
+      item["balance"] = Number(item["balance"]);
+      return item;
+    });
+    await db.insert("wallets", wallets);
+
+    const stateRoot = getRoot(wallets);
+    genesis["stateRoot"] = stateRoot;
+    await db.insert("blocks", [genesis]);
   }
 }
 
@@ -162,8 +164,6 @@ async function mineBlock(proposedBlock) {
   const valid = await isValidBlock(proposedBlock);
 
   if (valid) {
-    await db.insert("blocks", [proposedBlock]);
-
     const data = proposedBlock?.data;
     if (!data) {
       return false;
@@ -188,7 +188,10 @@ async function mineBlock(proposedBlock) {
         },
       ]);
     }
-
+    const wallets = await getWallets();
+    const stateRoot = getRoot(wallets);
+    proposedBlock["stateRoot"] = stateRoot;
+    await db.insert("blocks", [proposedBlock]);
     console.log(
       "Block accepted. New block hash: " +
         proposedBlock.hash +
@@ -225,7 +228,7 @@ async function miningInfo() {
 
 async function sync() {}
 
-async function wallets() {
+async function getWallets() {
   return await db.find("wallets", {});
 }
 
@@ -245,7 +248,6 @@ module.exports = {
   getBalanceOfAddress,
   miningInfo,
   sync,
-  wallets,
-  blockchain,
+  getWallets,
   blocks,
 };

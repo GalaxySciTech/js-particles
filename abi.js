@@ -33,7 +33,7 @@ fastify.get("/get-balance", async (request, reply) => {
 });
 
 fastify.get("/get-miners", async (request, reply) => {
-  const wallets = await blockchain.wallets();
+  const wallets = await blockchain.getWallets();
   return wallets;
 });
 
