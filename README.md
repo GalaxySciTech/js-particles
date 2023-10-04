@@ -13,7 +13,7 @@ Welcome to `js-particles`, a proof-of-work blockchain miner built with JavaScrip
 ### Contract Configuration
 
 1. **Environment Variables**:
-   - Set up a `.env` file based on `.env.sample` and provide a valid private key.
+   - Set up a `.env` file based on `.env.sample` and provide a valid wallet address.
 
 ## Prerequisites
 
