@@ -107,7 +107,7 @@ async function getAverageMineTime(blocks) {
   return total / (blocks.length - 1);
 }
 
-async function adjustDifficulty() {
+async function adjustDifficulty(block) {
   const blockchain = await getBlockChain();
   const targetMineTime = blockchain.targetMineTime;
 
@@ -115,10 +115,7 @@ async function adjustDifficulty() {
 
   const difficulty = latestBlock.difficulty;
 
-  const blocks = await getRecentBlocks(10);
-
-  const avgMineTime = await getAverageMineTime(blocks);
-
+  const avgMineTime = block.timestamp - latestBlock.timestamp;
   const changeDifficulty = Math.floor(difficulty * 0.1);
   if (avgMineTime < targetMineTime) {
     await db.update(
@@ -147,7 +144,7 @@ async function init() {
       {
         name: "particles",
         miningReward: 50,
-        targetMineTime: 5000,
+        targetMineTime: 50000,
         difficulty: genesis.difficulty,
       },
     ]);
@@ -203,7 +200,7 @@ async function mineBlock(proposedBlock) {
         " coinbase: " +
         proposedBlock.data[0]?.coinbase
     );
-    await adjustDifficulty();
+    await adjustDifficulty(proposedBlock);
     return true;
   } else {
     return false;
