@@ -8,14 +8,13 @@ const Block = require("./block");
 async function minePendingTransactions(miningRewardAddress) {
   const miningInfo = await p2p.getMiningInfo();
   if (!miningInfo) return;
+  const blockchain = miningInfo.blockchain;
   const latestBlock = miningInfo.latestBlock;
-  const difficulty = miningInfo.difficulty;
-  const miningReward = miningInfo.miningReward;
   const pendingTransactions = miningInfo.pendingTransactions;
 
   const coinbaseTx = {
     coinbase: miningRewardAddress,
-    amount: miningReward,
+    amount: blockchain.miningReward,
   };
   pendingTransactions.push(coinbaseTx);
 
@@ -27,7 +26,7 @@ async function minePendingTransactions(miningRewardAddress) {
     "",
     pendingTransactions,
     0,
-    difficulty
+    blockchain.difficulty
   );
   block = await mineBlock(block);
   const res = await p2p.submitBlock(block);
@@ -47,11 +46,15 @@ async function mineBlock(block) {
   let checkTime = Date.now();
   let startTime = Date.now();
   let hashesTried = 0;
+  block.hash = calculateHash(
+    block.index,
+    block.previousHash,
+    block.data,
+    block.timestamp,
+    block.nonce
+  );
 
-  while (
-    block.hash.substring(0, block.difficulty) !==
-    Array(block.difficulty + 1).join("0")
-  ) {
+  while (BigInt("0x" + block.hash) >= BigInt(block.difficulty)) {
     block.nonce++;
     block.hash = calculateHash(
       block.index,
