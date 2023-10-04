@@ -86,7 +86,6 @@ async function mineBlock(block) {
 }
 
 async function main() {
-  await blockchain.init();
   if (config.isMiner == 1) {
     const minerAddress = config.minerAddress;
     await abi.ready();
