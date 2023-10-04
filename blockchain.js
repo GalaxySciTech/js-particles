@@ -126,7 +126,10 @@ async function adjustDifficulty() {
       {},
       { $inc: { difficulty: -changeDifficulty } }
     );
-  } else if (difficulty > changeDifficulty) {
+  } else if (
+    difficulty + changeDifficulty <
+    Number("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+  ) {
     // Ensure difficulty never drops below 1
     await db.update(
       "blockchain",
