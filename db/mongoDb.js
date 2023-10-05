@@ -6,10 +6,19 @@ const uri = "mongodb://127.0.0.1:27017";
 const client = new MongoClient(uri);
 const database = client.db("particles");
 
-const find = async (col, query) => {
+const find = async (col, query, options) => {
   const collection = database.collection(col);
+  let cursor = collection.find(query);
+  
+  if (options) {
+    if (options.sort) {
+      cursor = cursor.sort(options.sort);
+    }
 
-  const cursor = collection.find(query);
+    if (options.limit) {
+      cursor = cursor.limit(options.limit);
+    }
+  }
 
   const list = [];
   for await (const doc of cursor) {
