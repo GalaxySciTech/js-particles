@@ -33,7 +33,7 @@ async function isValidBlock(proposedBlock) {
     console.log("Block hash does not match block contents.");
     return false;
   }
-  
+
   const latestBlock = await getLatestBlock();
   const blockchain = await getBlockChain();
 
@@ -150,7 +150,7 @@ async function init() {
       {
         name: "particles",
         miningReward: 50,
-        targetMineTime: 500,
+        targetMineTime: 1000,
         difficulty: genesis.difficulty,
       },
     ]);
