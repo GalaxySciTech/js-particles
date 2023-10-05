@@ -133,7 +133,7 @@ async function adjustDifficulty(block) {
   const targetMineTime = blockchain.targetMineTime;
   const difficulty = blockchain.difficulty;
 
-  const blocks = await getBlocks(100);
+  const blocks = await getBlocks(10);
   const avgMineTime = await getAvgTime(blocks);
 
   console.log("last 10 blocks avg time", avgMineTime);
