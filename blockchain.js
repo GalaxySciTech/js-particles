@@ -1,4 +1,4 @@
-const { calculateHash, getRoot } = require("./utils");
+const { calculateHash, getRoot, toChecksumAddress } = require("./utils");
 const db = require("./db/index.js");
 const Block = require("./block.js");
 const extendWallet = require("./wallets.json");
@@ -78,14 +78,14 @@ async function isValidBlock(proposedBlock) {
 
   const coinbase = last?.coinbase;
   const amount = last?.amount;
-  // Check if the block height is correct
-  if (!coinbase) {
-    console.log("Block height is incorrect.");
+
+  if (!toChecksumAddress(coinbase)) {
+    console.log("Coinbase address is incorrect.");
     return false;
   }
-  // Check if the block height is correct
+
   if (amount != miningReward) {
-    console.log("Block height is incorrect.");
+    console.log("Coinbase amount is incorrect.");
     return false;
   }
   // All checks passed
@@ -172,6 +172,7 @@ async function init() {
       },
     ]);
     const wallets = extendWallet.map((item) => {
+      item["address"] = toChecksumAddress(item["address"]);
       item["balance"] = Number(item["balance"]);
       return item;
     });
