@@ -92,21 +92,52 @@ async function isValidBlock(proposedBlock) {
   return true;
 }
 
-async function getLatestBlock() {
-  const blocks = await db.find("blocks", {});
-
-  return blocks[blocks.length - 1];
+async function getBlocks(limit) {
+  const blocks = await db.find(
+    "blocks",
+    {},
+    { sort: { timestamp: -1 }, limit }
+  );
+  return blocks;
 }
 
-async function adjustDifficulty(block) {
+async function getLatestBlock() {
+  const blocks = await getBlocks(1);
+
+  return blocks?.[0];
+}
+
+async function getAvgTime(blocks) {
+  if (blocks.length < 2) {
+    return Date.now() - blocks?.[0].timestamp;
+  }
+
+  let totalDifference = 0;
+
+  for (let i = 1; i < blocks.length; i++) {
+    if (blocks[i].index != 0) {
+      const difference = blocks[i].timestamp - blocks[i - 1].timestamp;
+      totalDifference += difference;
+    }
+  }
+
+  const averageDifference = Math.abs(
+    Math.floor(totalDifference / (blocks.length - 1))
+  );
+
+  return averageDifference;
+}
+
+async function adjustDifficulty() {
   const blockchain = await getBlockChain();
   const targetMineTime = blockchain.targetMineTime;
+  const difficulty = blockchain.difficulty;
 
-  const latestBlock = await getLatestBlock();
+  const blocks = await getBlocks(10);
+  const avgMineTime = await getAvgTime(blocks);
 
-  const difficulty = latestBlock.difficulty;
+  console.log("last 10 blocks avg time", avgMineTime);
 
-  const avgMineTime = block.timestamp - (latestBlock.timestamp || 0);
   const changeDifficulty = Math.floor(difficulty * 0.1);
 
   if (avgMineTime < targetMineTime) {
@@ -180,7 +211,10 @@ async function mineBlock(proposedBlock) {
         },
       ]);
     }
-    await adjustDifficulty(proposedBlock);
+    if (proposedBlock.index % 10 == 0) {
+      await adjustDifficulty();
+    }
+
     const wallets = await getWallets();
     const stateRoot = getRoot(wallets);
     proposedBlock["stateRoot"] = stateRoot;
