@@ -128,7 +128,7 @@ async function getAvgTime(blocks) {
   return averageDifference;
 }
 
-async function adjustDifficulty(block) {
+async function adjustDifficulty() {
   const blockchain = await getBlockChain();
   const targetMineTime = blockchain.targetMineTime;
   const difficulty = blockchain.difficulty;
@@ -211,7 +211,10 @@ async function mineBlock(proposedBlock) {
         },
       ]);
     }
-    await adjustDifficulty(proposedBlock);
+    if (proposedBlock.index % 10 == 0) {
+      await adjustDifficulty();
+    }
+
     const wallets = await getWallets();
     const stateRoot = getRoot(wallets);
     proposedBlock["stateRoot"] = stateRoot;
