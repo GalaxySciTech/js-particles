@@ -15,9 +15,9 @@ fastify.post("/submit-block", async (request, reply) => {
     proposedBlock
   );
   if (success) {
-    return { result: "Block accepted. Thank you for mining!" };
+    return { status: 1, result: "Block accepted. Thank you for mining!" };
   } else {
-    return { result: "Block rejected. Invalid solution." };
+    return { status: 0, result: "Block rejected. Invalid solution." };
   }
 });
 

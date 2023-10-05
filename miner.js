@@ -30,16 +30,19 @@ async function minePendingTransactions(miningRewardAddress) {
   );
   block = await mineBlock(block);
   const res = await p2p.submitBlock(block);
+  const status = res?.status;
   const result = res?.result;
-  console.log(
-    "block hash",
-    block.hash,
-    "height",
-    index,
-    "miner",
-    miningRewardAddress,
-    result
-  );
+  if (status == 1) {
+    console.log(
+      "block hash",
+      block.hash,
+      "height",
+      index,
+      "miner",
+      miningRewardAddress,
+      result
+    );
+  }
 }
 
 async function mineBlock(block) {
@@ -86,7 +89,6 @@ async function mineBlock(block) {
 }
 
 async function main() {
-  await blockchain.init();
   if (config.isMiner == 1) {
     const minerAddress = config.minerAddress;
     await abi.ready();

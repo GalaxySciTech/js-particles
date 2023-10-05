@@ -21,19 +21,6 @@ async function getBlockChain() {
 }
 
 async function isValidBlock(proposedBlock) {
-  const latestBlock = await getLatestBlock();
-  const blockchain = await getBlockChain();
-
-  if (blockchain.difficulty != proposedBlock.difficulty) {
-    console.log("Block difficulty does not match latest block.");
-    return false;
-  }
-  // Check if the block hash meets the difficulty requirement
-  if (BigInt("0x" + proposedBlock.hash) >= BigInt(proposedBlock.difficulty)) {
-    console.log("Block hash does not meet difficulty requirements.");
-    return false;
-  }
-
   // Check if the block's hash matches its contents
   const proposedBlockHash = calculateHash(
     proposedBlock.index,
@@ -44,6 +31,32 @@ async function isValidBlock(proposedBlock) {
   );
   if (proposedBlockHash !== proposedBlock.hash) {
     console.log("Block hash does not match block contents.");
+    return false;
+  }
+
+  const latestBlock = await getLatestBlock();
+  const blockchain = await getBlockChain();
+
+  if (
+    latestBlock.timestamp > proposedBlock.timestamp &&
+    proposedBlock.timestamp < Date.now()
+  ) {
+    console.log("Block timestamp is incorrect.");
+    return false;
+  }
+
+  if (latestBlock.index + 1 != proposedBlock.index) {
+    console.log("Block height is incorrect.");
+    return false;
+  }
+
+  if (blockchain.difficulty != proposedBlock.difficulty) {
+    console.log("Block difficulty does not match latest block.");
+    return false;
+  }
+  // Check if the block hash meets the difficulty requirement
+  if (BigInt("0x" + proposedBlock.hash) >= BigInt(proposedBlock.difficulty)) {
+    console.log("Block hash does not meet difficulty requirements.");
     return false;
   }
 
@@ -85,29 +98,7 @@ async function getLatestBlock() {
   return blocks[blocks.length - 1];
 }
 
-async function getRecentBlocks(n) {
-  const blocks = await db.find("blocks", {});
-  if (blocks.length <= n) {
-    return blocks.slice(1); // Exclude genesis block
-  } else {
-    return blocks.slice(-n); // Get last n blocks
-  }
-}
-
-async function getAverageMineTime(blocks) {
-  let total = 0;
-
-  for (let i = 1; i < blocks.length; i++) {
-    total += blocks[i].timestamp - blocks[i - 1].timestamp;
-  }
-  for (let i = 1; i < blocks.length; i++) {
-    total += blocks[i].timestamp - blocks[i - 1].timestamp;
-  }
-
-  return total / (blocks.length - 1);
-}
-
-async function adjustDifficulty() {
+async function adjustDifficulty(block) {
   const blockchain = await getBlockChain();
   const targetMineTime = blockchain.targetMineTime;
 
@@ -115,18 +106,19 @@ async function adjustDifficulty() {
 
   const difficulty = latestBlock.difficulty;
 
-  const blocks = await getRecentBlocks(10);
-
-  const avgMineTime = await getAverageMineTime(blocks);
-
+  const avgMineTime = block.timestamp - (latestBlock.timestamp || 0);
   const changeDifficulty = Math.floor(difficulty * 0.1);
+
   if (avgMineTime < targetMineTime) {
     await db.update(
       "blockchain",
       {},
       { $inc: { difficulty: -changeDifficulty } }
     );
-  } else if (difficulty > changeDifficulty) {
+  } else if (
+    difficulty + changeDifficulty <
+    Number("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+  ) {
     // Ensure difficulty never drops below 1
     await db.update(
       "blockchain",
@@ -188,6 +180,7 @@ async function mineBlock(proposedBlock) {
         },
       ]);
     }
+    await adjustDifficulty(proposedBlock);
     const wallets = await getWallets();
     const stateRoot = getRoot(wallets);
     proposedBlock["stateRoot"] = stateRoot;
@@ -200,7 +193,7 @@ async function mineBlock(proposedBlock) {
         " coinbase: " +
         proposedBlock.data[0]?.coinbase
     );
-    await adjustDifficulty();
+
     return true;
   } else {
     return false;
