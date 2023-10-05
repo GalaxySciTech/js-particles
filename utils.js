@@ -59,16 +59,7 @@ function getRoot(list) {
 function toChecksumAddress(address) {
   address = address.toLowerCase().replace("0x", "");
   const hash = keccak256(address).toString("hex");
-  let checksumAddress = '0x';
-
-  for (let i = 0; i < address.length; i++) {
-    if (parseInt(hash[i], 16) >= 8) {
-      checksumAddress += address[i].toUpperCase();
-    } else {
-      checksumAddress += address[i];
-    }
-  }
-  return checksumAddress;
+  return '0x' + address.split('').map((char, index) => parseInt(hash[index], 16) >= 8 ? char.toUpperCase() : char).join('');
 }
 
 module.exports = {
