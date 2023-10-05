@@ -79,7 +79,9 @@ async function isValidBlock(proposedBlock) {
   const coinbase = last?.coinbase;
   const amount = last?.amount;
 
-  if (!toChecksumAddress(coinbase)) {
+  const checksumAddress = toChecksumAddress(coinbase);
+
+  if (checksumAddress != coinbase) {
     console.log("Coinbase address is incorrect.");
     return false;
   }
