@@ -236,7 +236,8 @@ async function mineBlock(proposedBlock) {
 }
 
 async function getBalanceOfAddress(address) {
-  const wallets = await db.find("wallets", { address: address });
+  address = toChecksumAddress(address);
+  const wallets = await db.find("wallets", { address });
 
   return wallets?.[0] || {};
 }

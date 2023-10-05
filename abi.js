@@ -28,6 +28,7 @@ fastify.get("/get-mining-info", async (request, reply) => {
 
 fastify.get("/get-balance", async (request, reply) => {
   const address = request.query.address;
+  
   const wallet = await blockchain.getBalanceOfAddress(address);
   return wallet;
 });
