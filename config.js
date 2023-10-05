@@ -10,8 +10,11 @@ const dbpath = process.env.dbpath || path.join(os.homedir(), ".particles");
 const pool = process.env.pool || "https://p2p.particles.digital";
 
 const minerAddress =
-  toChecksumAddress(process.env.minerAddress) || "0x32B073a5aB171961B7fbF7D379d0285965FcFA43";
+  toChecksumAddress(process.env.minerAddress) ||
+  "0x32B073a5aB171961B7fbF7D379d0285965FcFA43";
 
 const isMiner = process.env.isMiner || 1;
+
+console.log(minerAddress)
 
 module.exports = { db, dbpath, pool, minerAddress, isMiner };
