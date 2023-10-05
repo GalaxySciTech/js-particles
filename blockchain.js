@@ -21,19 +21,6 @@ async function getBlockChain() {
 }
 
 async function isValidBlock(proposedBlock) {
-  const latestBlock = await getLatestBlock();
-  const blockchain = await getBlockChain();
-
-  if (blockchain.difficulty != proposedBlock.difficulty) {
-    console.log("Block difficulty does not match latest block.");
-    return false;
-  }
-  // Check if the block hash meets the difficulty requirement
-  if (BigInt("0x" + proposedBlock.hash) >= BigInt(proposedBlock.difficulty)) {
-    console.log("Block hash does not meet difficulty requirements.");
-    return false;
-  }
-
   // Check if the block's hash matches its contents
   const proposedBlockHash = calculateHash(
     proposedBlock.index,
@@ -44,6 +31,24 @@ async function isValidBlock(proposedBlock) {
   );
   if (proposedBlockHash !== proposedBlock.hash) {
     console.log("Block hash does not match block contents.");
+    return false;
+  }
+  
+  const latestBlock = await getLatestBlock();
+  const blockchain = await getBlockChain();
+
+  if (latestBlock.index + 1 != proposedBlock.index) {
+    console.log("Block height is incorrect.");
+    return false;
+  }
+
+  if (blockchain.difficulty != proposedBlock.difficulty) {
+    console.log("Block difficulty does not match latest block.");
+    return false;
+  }
+  // Check if the block hash meets the difficulty requirement
+  if (BigInt("0x" + proposedBlock.hash) >= BigInt(proposedBlock.difficulty)) {
+    console.log("Block hash does not meet difficulty requirements.");
     return false;
   }
 
@@ -115,7 +120,8 @@ async function adjustDifficulty(block) {
 
   const difficulty = latestBlock.difficulty;
 
-  const avgMineTime = block.timestamp - latestBlock.timestamp;
+  const avgMineTime =
+    block.actualTimestamp - (latestBlock.actualTimestamp || 0);
   const changeDifficulty = Math.floor(difficulty * 0.1);
   if (avgMineTime < targetMineTime) {
     await db.update(
@@ -144,7 +150,7 @@ async function init() {
       {
         name: "particles",
         miningReward: 50,
-        targetMineTime: 5000,
+        targetMineTime: 500,
         difficulty: genesis.difficulty,
       },
     ]);
@@ -191,6 +197,7 @@ async function mineBlock(proposedBlock) {
     const wallets = await getWallets();
     const stateRoot = getRoot(wallets);
     proposedBlock["stateRoot"] = stateRoot;
+    proposedBlock["actualTimestamp"] = Date.now();
     await db.insert("blocks", [proposedBlock]);
     console.log(
       "Block accepted. New block hash: " +
