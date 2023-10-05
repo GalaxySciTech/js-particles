@@ -37,6 +37,14 @@ async function isValidBlock(proposedBlock) {
   const latestBlock = await getLatestBlock();
   const blockchain = await getBlockChain();
 
+  if (
+    latestBlock.timestamp > proposedBlock.timestamp &&
+    proposedBlock.timestamp < Date.now()
+  ) {
+    console.log("Block timestamp is incorrect.");
+    return false;
+  }
+
   if (latestBlock.index + 1 != proposedBlock.index) {
     console.log("Block height is incorrect.");
     return false;
@@ -90,28 +98,6 @@ async function getLatestBlock() {
   return blocks[blocks.length - 1];
 }
 
-async function getRecentBlocks(n) {
-  const blocks = await db.find("blocks", {});
-  if (blocks.length <= n) {
-    return blocks.slice(1); // Exclude genesis block
-  } else {
-    return blocks.slice(-n); // Get last n blocks
-  }
-}
-
-async function getAverageMineTime(blocks) {
-  let total = 0;
-
-  for (let i = 1; i < blocks.length; i++) {
-    total += blocks[i].timestamp - blocks[i - 1].timestamp;
-  }
-  for (let i = 1; i < blocks.length; i++) {
-    total += blocks[i].timestamp - blocks[i - 1].timestamp;
-  }
-
-  return total / (blocks.length - 1);
-}
-
 async function adjustDifficulty(block) {
   const blockchain = await getBlockChain();
   const targetMineTime = blockchain.targetMineTime;
@@ -120,9 +106,9 @@ async function adjustDifficulty(block) {
 
   const difficulty = latestBlock.difficulty;
 
-  const avgMineTime =
-    block.actualTimestamp - (latestBlock.actualTimestamp || 0);
+  const avgMineTime = block.timestamp - (latestBlock.timestamp || 0);
   const changeDifficulty = Math.floor(difficulty * 0.1);
+
   if (avgMineTime < targetMineTime) {
     await db.update(
       "blockchain",
@@ -194,10 +180,10 @@ async function mineBlock(proposedBlock) {
         },
       ]);
     }
+    await adjustDifficulty(proposedBlock);
     const wallets = await getWallets();
     const stateRoot = getRoot(wallets);
     proposedBlock["stateRoot"] = stateRoot;
-    proposedBlock["actualTimestamp"] = Date.now();
     await db.insert("blocks", [proposedBlock]);
     console.log(
       "Block accepted. New block hash: " +
@@ -207,7 +193,7 @@ async function mineBlock(proposedBlock) {
         " coinbase: " +
         proposedBlock.data[0]?.coinbase
     );
-    await adjustDifficulty(proposedBlock);
+
     return true;
   } else {
     return false;
