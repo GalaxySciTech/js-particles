@@ -56,6 +56,24 @@ function getRoot(list) {
   return root;
 }
 
+function toChecksumAddress(address) {
+  if (!/^0x?[0-9a-f]{40}$/i.test(address)) {
+    return;
+  }
+  const addressWithoutPrefix = address.toLowerCase().replace("0x", "");
+  const hash = keccak256(addressWithoutPrefix).toString("hex");
+
+  let checksumAddress = "0x";
+  for (let i = 0; i < addressWithoutPrefix.length; i++) {
+    checksumAddress +=
+      parseInt(hash[i], 16) >= 8
+        ? addressWithoutPrefix[i].toUpperCase()
+        : addressWithoutPrefix[i];
+  }
+
+  return checksumAddress;
+}
+
 module.exports = {
   calculateHash,
   sleep,
@@ -64,4 +82,5 @@ module.exports = {
   recoveryFromSig,
   addressFromPublicKey,
   getRoot,
+  toChecksumAddress,
 };
