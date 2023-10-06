@@ -1,4 +1,9 @@
-const { calculateHash, getRoot, toChecksumAddress } = require("./utils");
+const {
+  calculateHash,
+  getRoot,
+  toChecksumAddress,
+  isAddress,
+} = require("./utils");
 const db = require("./db/index.js");
 const Block = require("./block.js");
 const extendWallet = require("./wallets.json");
@@ -32,8 +37,7 @@ async function isValidBlock(proposedBlock) {
     proposedBlock.nonce
   );
   if (proposedBlockHash !== proposedBlock.hash) {
-    console.log("Block hash does not match block contents.");
-    return false;
+    throw Error("Block hash does not match block contents.");
   }
 
   const latestBlock = await getLatestBlock();
@@ -43,35 +47,29 @@ async function isValidBlock(proposedBlock) {
     latestBlock.timestamp > proposedBlock.timestamp &&
     proposedBlock.timestamp < Date.now()
   ) {
-    console.log("Block timestamp is incorrect.");
-    return false;
+    throw Error("Block timestamp is incorrect.");
   }
 
   if (latestBlock.index + 1 != proposedBlock.index) {
-    console.log("Block height is incorrect.");
-    return false;
+    throw Error("Block height is incorrect.");
   }
 
   if (blockchain.difficulty != proposedBlock.difficulty) {
-    console.log("Block difficulty does not match latest block.");
-    return false;
+    throw Error("Block difficulty does not match latest block.");
   }
   // Check if the block hash meets the difficulty requirement
   if (BigInt("0x" + proposedBlock.hash) >= BigInt(proposedBlock.difficulty)) {
-    console.log("Block hash does not meet difficulty requirements.");
-    return false;
+    throw Error("Block hash does not meet difficulty requirements.");
   }
 
   // Check if the previous hash matches the hash of the latest block on the chain
   if (proposedBlock.previousHash !== latestBlock.hash) {
-    console.log("Previous hash does not match hash of the latest block.");
-    return false;
+    throw Error("Previous hash does not match hash of the latest block.");
   }
 
   const data = proposedBlock?.data;
   if (data.length == 0) {
-    console.log("Block data is incorrect.");
-    return false;
+    throw Error("Block data is incorrect.");
   }
 
   const last = data[data.length - 1];
@@ -81,16 +79,12 @@ async function isValidBlock(proposedBlock) {
   const coinbase = last?.coinbase;
   const amount = last?.amount;
 
-  const checksumAddress = toChecksumAddress(coinbase);
-
-  if (checksumAddress != coinbase) {
-    console.log("Coinbase address is incorrect.");
-    return false;
+  if (!isAddress(coinbase)) {
+    throw Error("Coinbase address is incorrect.");
   }
 
   if (amount != miningReward) {
-    console.log("Coinbase amount is incorrect.");
-    return false;
+    throw Error("Coinbase amount is incorrect.");
   }
   // All checks passed
   return true;
@@ -189,54 +183,64 @@ async function init() {
 }
 
 async function mineBlock(proposedBlock) {
-  const valid = await isValidBlock(proposedBlock);
+  await isValidBlock(proposedBlock);
 
-  if (valid) {
-    const data = proposedBlock?.data;
-    if (!data) {
-      return false;
-    }
-    const last = data[data.length - 1];
+  const data = proposedBlock?.data;
+  if (!data) {
+    throw Error("Block data is incorrect.");
+  }
+  const last = data[data.length - 1];
 
-    const coinbase = last?.coinbase;
-    const amount = last?.amount;
+  const coinbase = last?.coinbase;
+  const amount = last?.amount;
 
-    const wallet = await getBalanceOfAddress(coinbase);
-    if (wallet.address) {
-      await db.update(
-        "wallets",
-        { address: coinbase },
-        { $inc: { balance: amount } }
-      );
-    } else {
-      await db.insert("wallets", [
-        {
-          address: coinbase,
-          balance: amount,
-        },
-      ]);
-    }
-    if (proposedBlock.index % 10 == 0) {
-      await adjustDifficulty();
-    }
-
-    const wallets = await getWallets();
-    const stateRoot = getRoot(wallets);
-    proposedBlock["stateRoot"] = stateRoot;
-    await db.insert("blocks", [proposedBlock]);
-    console.log(
-      "Block accepted. New block hash: " +
-        proposedBlock.hash +
-        " height: " +
-        proposedBlock.index +
-        " coinbase: " +
-        proposedBlock.data[0]?.coinbase
+  const wallet = await getBalanceOfAddress(coinbase);
+  if (wallet.address) {
+    await db.update(
+      "wallets",
+      { address: coinbase },
+      { $inc: { balance: amount } }
     );
-
-    return true;
   } else {
+    await db.insert("wallets", [
+      {
+        address: coinbase,
+        balance: amount,
+      },
+    ]);
+  }
+  if (proposedBlock.index % 10 == 0) {
+    await adjustDifficulty();
+  }
+
+  const wallets = await getWallets();
+  const stateRoot = getRoot(wallets);
+  proposedBlock["stateRoot"] = stateRoot;
+  await db.insert("blocks", [proposedBlock]);
+  console.log(
+    "Block accepted. New block hash: " +
+      proposedBlock.hash +
+      " height: " +
+      proposedBlock.index +
+      " coinbase: " +
+      proposedBlock.data[0]?.coinbase
+  );
+}
+
+async function addTransaction(transaction) {
+  const from = recoveryFromSig(transaction.sig);
+  const wallet = await getBalanceOfAddress(from);
+  if (!wallet.address) {
     return false;
   }
+  const balance = wallet.balance;
+  if (balance < transaction.amount) {
+    return;
+  }
+  if (!isAddress(transaction.to)) {
+    return;
+  }
+  await db.insert("pendingTransactions", [transaction]);
 }
 
 async function getBalanceOfAddress(address) {
@@ -287,4 +291,5 @@ module.exports = {
   sync,
   getWallets,
   blocks,
+  addTransaction,
 };

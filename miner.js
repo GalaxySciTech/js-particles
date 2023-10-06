@@ -27,19 +27,16 @@ async function minePendingTransactions(miningRewardAddress) {
     blockchain.difficulty
   );
   block = await mineBlock(block);
+  if (!block) {
+    return;
+  }
   const res = await p2p.submitBlock(block);
   const status = res?.status;
   const result = res?.result;
   if (status == 1) {
-    console.log(
-      "block hash",
-      block.hash,
-      "height",
-      index,
-      "miner",
-      miningRewardAddress,
-      result
-    );
+    console.log("submit block success ", JSON.stringify(block));
+  } else {
+    console.log("submit block error ", result);
   }
 }
 

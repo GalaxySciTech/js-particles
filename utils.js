@@ -56,6 +56,13 @@ function getRoot(list) {
   return root;
 }
 
+function isAddress(address) {
+  if (toChecksumAddress(address) != address) {
+    return false;
+  }
+  return true;
+}
+
 function toChecksumAddress(address) {
   if (!/^0x?[0-9a-f]{40}$/i.test(address)) {
     return;
@@ -75,6 +82,7 @@ function toChecksumAddress(address) {
 }
 
 module.exports = {
+  isAddress,
   calculateHash,
   sleep,
   generateAddress,

@@ -11,8 +11,11 @@ async function submitBlock(block) {
   return post("/submit-block", block);
 }
 
-async function sync() {
-  await get("/get-blockchain");
+async function getBalanceOfAddress(address) {
+  return get("/get-balance?address=" + address);
+}
+async function addTransaction(transaction) {
+  await post("/add-transaction", transaction);
 }
 
 async function get(url) {
@@ -44,6 +47,7 @@ async function post(url, data) {
 }
 
 module.exports = {
+  getBalanceOfAddress,
   getMiningInfo,
   submitBlock,
 };

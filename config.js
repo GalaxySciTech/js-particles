@@ -15,6 +15,5 @@ const minerAddress =
 
 const isMiner = process.env.isMiner || 1;
 
-console.log(minerAddress)
 
 module.exports = { db, dbpath, pool, minerAddress, isMiner };
