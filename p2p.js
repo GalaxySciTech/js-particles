@@ -7,6 +7,10 @@ async function getMiningInfo() {
   return get("/getMiningInfo");
 }
 
+async function getAccount(address) {
+  return get("/getAccount?address=" + address);
+}
+
 async function submitBlock(block) {
   return post("/submitBlock", block);
 }
@@ -51,4 +55,5 @@ module.exports = {
   getMiningInfo,
   submitBlock,
   addTransaction,
+  getAccount,
 };

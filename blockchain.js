@@ -3,6 +3,7 @@ const {
   isAddress,
   recoveryFromSig,
   isPositiveInteger,
+  createMsgFromTransaction,
 } = require("./utils");
 const db = require("./db");
 const Block = require("./block");
@@ -218,11 +219,12 @@ async function mineBlock(proposedBlock) {
 }
 
 async function addTransaction(transaction) {
-  const pt = await db.find("pendingTransactions", { sig: transaction.sig });
-  if (pt.length > 0) {
-    throw Error("Transaction sig error");
-  }
+  transaction.sig.msg = createMsgFromTransaction({ ...transaction });
+
   const from = recoveryFromSig(transaction.sig);
+  if (from != transaction.from) {
+    throw Error("Invalid signature");
+  }
 
   const account = await getBalance(from);
   if (!account.address) {

@@ -63,6 +63,12 @@ fastify.get("/getMiners", async (request, reply) => {
   return accounts;
 });
 
+fastify.get("/getAccount", async (request, reply) => {
+  const address = parseInt(request.query.address);
+  const accounts = await getAccounts(address);
+  return accounts?.[0] || {};
+});
+
 fastify.get("/getBlock", async (request, reply) => {
   const index = parseInt(request.query.index);
   const blocks = await getBlock(index);

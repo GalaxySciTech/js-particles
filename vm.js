@@ -1,23 +1,31 @@
 const { changeBalance } = require("./accounts");
 const db = require("./db");
 const opcodes = {
-  receive: async (from, to, amount, input) => {
-    const success = await changeBalance(from, -amount);
+  receive: async (transaction) => {
+    const success = await changeBalance(transaction.from, -transaction.amount);
     if (success) {
-      await changeBalance(to, amount);
+      await changeBalance(transaction.to, transaction.amount);
     }
   },
 };
 async function exec(transaction) {
+  const accounts = await db.find("accounts", { address: transaction.from });
+  if (accounts.length == 0) {
+    return;
+  }
+  if ((accounts[0].index || 0) != transaction.index) {
+    return;
+  }
   const opcode = transaction.opcode;
-  await opcodes[opcode](
-    transaction.from,
-    transaction.to,
-    transaction.amount,
-    transaction.input
-  );
+  await opcodes[opcode](transaction);
 
   await db.del("pendingTransactions", { sig: transaction.sig });
+
+  await db.update(
+    "accounts",
+    { address: transaction.from },
+    { $set: { index: transaction.index + 1 } }
+  );
 }
 
 async function coinbase(from, amount) {

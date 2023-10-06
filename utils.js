@@ -11,6 +11,12 @@ function addressFromPublicKey(publicKey) {
     .toString("hex")}`;
 }
 
+function addressFromPrivateKeyHex(privateKeyHex) {
+  const privateKey = Buffer.from(privateKeyHex, "hex");
+  const publicKey = secp256k1.publicKeyCreate(privateKey, false).slice(1);
+  return addressFromPublicKey(publicKey);
+}
+
 function generateAddress() {
   const privateKey = crypto.randomBytes(32);
   const publicKey = secp256k1.publicKeyCreate(privateKey, false).slice(1);
@@ -35,6 +41,17 @@ function hexToUint8Array(hexString) {
     bytes[i / 2] = parseInt(hexString.substr(i, 2), 16);
   }
   return bytes;
+}
+
+function createMsgFromTransaction(transaction) {
+  delete transaction.sig;
+  let msg = crypto
+    .createHash("sha256")
+    .update(JSON.stringify(transaction))
+    .digest();
+  msg = msg.toString("hex");
+
+  return msg;
 }
 
 function sign(data, privateKeyHex) {
@@ -109,6 +126,8 @@ function toChecksumAddress(address) {
 }
 
 module.exports = {
+  createMsgFromTransaction,
+  addressFromPrivateKeyHex,
   uint8ArrayToHex,
   isPositiveInteger,
   isAddress,
