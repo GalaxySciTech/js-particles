@@ -6,6 +6,7 @@ const {
   recoveryFromSig,
   uint8ArrayToHex,
   addressFromPrivateKeyHex,
+  calculateHash,
 } = require("./utils");
 const { getBalanceOfAddress, addTransaction, getAccount } = require("./p2p");
 const { walletPrivateKey } = require("./config");
@@ -69,7 +70,15 @@ yargs
         console.error("Invalid amount");
         return;
       }
-      const transaction = { from, to, amount, opcode: "receive", index };
+      const transaction = {
+        from,
+        to,
+        amount,
+        opcode: "receive",
+        index,
+        hash: "",
+      };
+      transaction.hash = calculateHash(transaction);
       const sig = sign(JSON.stringify(transaction), walletPrivateKey);
 
       transaction.sig = sig;

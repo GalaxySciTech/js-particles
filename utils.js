@@ -83,11 +83,9 @@ function recoveryFromSig(sig) {
   return addressFromPublicKey(recoveredPublicKey);
 }
 
-function calculateHash(index, previousHash, data, timestamp, nonce) {
-  return crypto
-    .createHash("sha256")
-    .update(index + previousHash + timestamp + JSON.stringify(data) + nonce)
-    .digest("hex");
+function calculateHash(data) {
+  data = JSON.stringify(data);
+  return crypto.createHash("sha256").update(data).digest("hex");
 }
 function sleep(time) {
   return new Promise((resolve) => setTimeout(resolve, time));

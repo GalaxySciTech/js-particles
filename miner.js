@@ -44,23 +44,12 @@ async function mineBlock(block) {
   let checkTime = Date.now();
   let startTime = Date.now();
   let hashesTried = 0;
-  block.hash = calculateHash(
-    block.index,
-    block.previousHash,
-    block.transactions,
-    block.timestamp,
-    block.nonce
-  );
+  block.hash = calculateHash(block);
 
   while (BigInt("0x" + block.hash) >= BigInt(block.difficulty)) {
     block.nonce++;
-    block.hash = calculateHash(
-      block.index,
-      block.previousHash,
-      block.transactions,
-      block.timestamp,
-      block.nonce
-    );
+    block.hash = "";
+    block.hash = calculateHash(block);
     hashesTried++;
 
     // Output rate every second

@@ -19,11 +19,11 @@ const {
 const { exec, coinbase, isOpcode } = require("./vm");
 
 function createGenesisBlock() {
-  return Block(
+  const block = Block(
     0,
     0,
     "0",
-    calculateHash(0, "0", 0, 0),
+    "",
     [
       {
         data: "朕统六国，天下归一",
@@ -32,6 +32,8 @@ function createGenesisBlock() {
     0,
     Number("0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
   );
+  block.hash = calculateHash(block);
+  return block;
 }
 
 async function getBlockChain() {
@@ -41,13 +43,9 @@ async function getBlockChain() {
 
 async function isValidBlock(proposedBlock) {
   // Check if the block's hash matches its contents
-  const proposedBlockHash = calculateHash(
-    proposedBlock.index,
-    proposedBlock.previousHash,
-    proposedBlock.transactions,
-    proposedBlock.timestamp,
-    proposedBlock.nonce
-  );
+  const temp = { ...proposedBlock };
+  temp.hash = "";
+  const proposedBlockHash = calculateHash(temp);
   if (proposedBlockHash !== proposedBlock.hash) {
     throw Error("Block hash does not match block contents.");
   }
@@ -219,6 +217,12 @@ async function mineBlock(proposedBlock) {
 }
 
 async function addTransaction(transaction) {
+  const temp = { ...transaction };
+  temp.hash = "";
+  const hash = calculateHash(temp);
+  if (hash != transaction.hash) {
+    throw Error("Invalid transaction hash");
+  }
 
   const from = recoveryFromSig(transaction.sig);
   if (from != transaction.from) {
