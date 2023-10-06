@@ -36,7 +36,7 @@ async function minePendingTransactions(miningRewardAddress) {
   if (status == 1) {
     console.log("submit block success ", JSON.stringify(block));
   } else {
-    console.log("submit block error ", result);
+    console.error("submit block error ", result);
   }
 }
 

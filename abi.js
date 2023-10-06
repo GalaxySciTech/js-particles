@@ -17,7 +17,7 @@ fastify.register(cors);
 
 fastify.setErrorHandler((error, request, reply) => {
   console.error(error?.message);
-  return { status: 1, result: error?.message };
+  return { status: 0, result: error?.message };
 });
 
 fastify.post("/addTransaction", async (request, reply) => {
