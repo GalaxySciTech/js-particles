@@ -2,12 +2,14 @@
   "dependencies": {
     "@fastify/cors": "^8.4.0",
     "async-mutex": "^0.4.0",
+    "bignumber.js": "^9.1.2",
     "dotenv": "^16.3.1",
     "fastify": "^4.23.2",
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.3.10",
     "mongodb": "^6.1.0",
     "node-fetch-npm": "^2.0.4",
-    "secp256k1": "^5.0.0"
+    "secp256k1": "^5.0.0",
+    "yargs": "^17.7.2"
   }
 }

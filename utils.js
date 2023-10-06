@@ -20,16 +20,43 @@ function generateAddress() {
   return { privateKey, publicKey, privateKeyHex, address };
 }
 
-function sign(data, privateKey) {
-  const msg = crypto.createHash("sha256").update(data).digest();
+function uint8ArrayToHex(byteArray) {
+  return Array.from(byteArray)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function hexToUint8Array(hexString) {
+  if (hexString.length % 2 !== 0) {
+    throw new Error("Invalid hex string");
+  }
+  const bytes = new Uint8Array(hexString.length / 2);
+  for (let i = 0; i < hexString.length; i += 2) {
+    bytes[i / 2] = parseInt(hexString.substr(i, 2), 16);
+  }
+  return bytes;
+}
+
+function sign(data, privateKeyHex) {
+  const privateKey = Buffer.from(privateKeyHex, "hex");
+  let msg = crypto.createHash("sha256").update(data).digest();
 
   let sig = secp256k1.ecdsaSign(msg, privateKey);
+
+  msg = msg.toString("hex");
+
+  sig.signature = uint8ArrayToHex(sig.signature);
   return { msg, sig };
 }
 
+function isPositiveInteger(num) {
+  const parsed = Number(num);
+  return Number.isInteger(parsed) && parsed > 0;
+}
+
 function recoveryFromSig(sig) {
-  const msg = sig.msg;
-  const signature = sig.sig.signature;
+  const msg = Buffer.from(sig.msg, "hex");
+  const signature = hexToUint8Array(sig.sig.signature);
   const recid = sig.sig.recid;
 
   const recoveredPublicKey = secp256k1
@@ -56,6 +83,13 @@ function getRoot(list) {
   return root;
 }
 
+function isAddress(address) {
+  if (toChecksumAddress(address) != address) {
+    return false;
+  }
+  return true;
+}
+
 function toChecksumAddress(address) {
   if (!/^0x?[0-9a-f]{40}$/i.test(address)) {
     return;
@@ -75,6 +109,9 @@ function toChecksumAddress(address) {
 }
 
 module.exports = {
+  uint8ArrayToHex,
+  isPositiveInteger,
+  isAddress,
   calculateHash,
   sleep,
   generateAddress,

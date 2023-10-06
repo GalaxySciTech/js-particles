@@ -1,63 +1,71 @@
 # js-particles POW Blockchain Miner
 
-Welcome to `js-particles`, a proof-of-work blockchain miner built with JavaScript.
+Welcome to `js-particles`, a sleek and efficient proof-of-work blockchain miner crafted in JavaScript.
 
-## Table of Contents
+## 📖 Table of Contents
 
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Checking Balance](#check-balance)
-- [Logs & Output](#log)
+- [Contract Configuration](#contract-configuration)
+- [Logs & Output](#logs-output)
 
-### Contract Configuration
+## 🚀 Prerequisites
 
-1. **Environment Variables**:
-   - Set up a `.env` file based on `.env.sample` and provide a valid wallet address.
-
-## Prerequisites
-
-Ensure you have the following installed on your local machine:
+Before diving in, ensure your system is equipped with:
 
 - [Node.js](https://nodejs.org/) (v16 or above)
 - [npm](https://www.npmjs.com/) (v7 or above)
 
-## Installation
+## 📜 Contract Configuration
 
-### 1. **Installing Dependencies:**
+1. **Environment Magic**:
+   Begin by conjuring a `.env` file from `.env.sample`. Make sure to infuse it with a genuine wallet address.
 
-If you haven't installed Yarn, you can do it using npm:
+## 🛠 Installation
+
+### Step 1: Install Dependencies
+
+If you haven't embraced Yarn yet:
 
 ```bash
 npm install -g yarn
 ```
 
-Then, install the project dependencies:
+Next, pull in the project dependencies:
 
 ```bash
-yarn
+yarn install
 ```
 
-### 2. **Starting the Miner:**
+### Step 2: Ignite the Miner
 
-To start the mining process, execute:
+Fire up the mining process with:
 
 ```bash
 node miner.js
 ```
 
-## Usage
+## 🔧 Usage
 
-### <a name="check-balance"></a>Checking Balance
+### Checking Balance
 
-To check the balance for a specific address:
+Peek into the balance for any address:
 
 ```bash
-curl --location 'https://p2p.particles.digital/get-balance?address=${address}'
+node cmd.js getBalance --address YOUR_ADDRESS_HERE
 ```
 
-### <a name="log"></a>Logs & Output
+### Sending Particles
 
-Below is an example log from the mining process:
+To transfer particles:
 
-![Mining Log](image.png)
+```bash
+node cmd.js sendTransaction --to DESTINATION_ADDRESS --amount AMOUNT_TO_SEND
+```
+
+## 🖼 Logs & Output
+
+Witness the symphony of the mining process:
+
+![Mining Symphony](image.png)

@@ -11,12 +11,10 @@ async function minePendingTransactions(miningRewardAddress) {
   const blockchain = miningInfo.blockchain;
   const latestBlock = miningInfo.latestBlock;
   const pendingTransactions = miningInfo.pendingTransactions;
+  const coinbaseTx = miningInfo.coinbaseTx;
+  coinbaseTx.from = miningRewardAddress;
 
-  const coinbaseTx = {
-    coinbase: miningRewardAddress,
-    amount: blockchain.miningReward,
-  };
-  pendingTransactions.push(coinbaseTx);
+  pendingTransactions.unshift(coinbaseTx);
 
   const index = (latestBlock.index || 0) + 1;
   let block = Block(
@@ -29,19 +27,16 @@ async function minePendingTransactions(miningRewardAddress) {
     blockchain.difficulty
   );
   block = await mineBlock(block);
+  if (!block) {
+    return;
+  }
   const res = await p2p.submitBlock(block);
   const status = res?.status;
   const result = res?.result;
   if (status == 1) {
-    console.log(
-      "block hash",
-      block.hash,
-      "height",
-      index,
-      "miner",
-      miningRewardAddress,
-      result
-    );
+    console.log("submit block success ", JSON.stringify(block));
+  } else {
+    console.log("submit block error ", result);
   }
 }
 
@@ -52,7 +47,7 @@ async function mineBlock(block) {
   block.hash = calculateHash(
     block.index,
     block.previousHash,
-    block.data,
+    block.transactions,
     block.timestamp,
     block.nonce
   );
@@ -62,7 +57,7 @@ async function mineBlock(block) {
     block.hash = calculateHash(
       block.index,
       block.previousHash,
-      block.data,
+      block.transactions,
       block.timestamp,
       block.nonce
     );
