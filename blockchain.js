@@ -87,10 +87,10 @@ async function isValidBlock(proposedBlock) {
 
   const miningReward = blockchain["miningReward"];
 
-  const coinbase = first?.coinbase;
+  const from = first?.from;
   const amount = first?.amount;
 
-  if (!isAddress(coinbase)) {
+  if (!isAddress(from)) {
     throw Error("Coinbase address is incorrect.");
   }
 
@@ -197,7 +197,7 @@ async function mineBlock(proposedBlock) {
   const first = data[0];
 
   if (first.opcode == "coinbase") {
-    await coinbase(first.coinbase, first.amount);
+    await coinbase(first.from, first.amount);
   } else {
     throw Error("Block data is incorrect. missing coinbase");
   }
