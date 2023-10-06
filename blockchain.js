@@ -219,7 +219,6 @@ async function mineBlock(proposedBlock) {
 }
 
 async function addTransaction(transaction) {
-  transaction.sig.msg = createMsgFromTransaction({ ...transaction });
 
   const from = recoveryFromSig(transaction.sig);
   if (from != transaction.from) {

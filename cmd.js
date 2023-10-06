@@ -72,9 +72,7 @@ yargs
       const transaction = { from, to, amount, opcode: "receive", index };
       const sig = sign(JSON.stringify(transaction), walletPrivateKey);
 
-      delete sig.msg;
       transaction.sig = sig;
-      console.log(transaction);
 
       const res = await addTransaction(transaction);
 
