@@ -1,6 +1,13 @@
 const yargs = require("yargs");
-const { isAddress } = require("./utils");
+const {
+  isAddress,
+  sign,
+  isPositiveInteger,
+  recoveryFromSig,
+  uint8ArrayToHex,
+} = require("./utils");
 const { getBalanceOfAddress, addTransaction } = require("./p2p");
+const { walletPrivateKey } = require("./config");
 
 yargs
   .command({
@@ -30,7 +37,7 @@ yargs
     },
   })
   .command({
-    command: "sendTrasnaction",
+    command: "sendTransaction",
     describe: "send a transaction",
     builder: {
       to: {
@@ -44,10 +51,26 @@ yargs
         type: "number",
       },
     },
-    handler: async () => {
-      console.log("wait implement");
-      //   const transaction = {};
-      //   await addTransaction(transaction);
+    handler: async (argv) => {
+      const to = argv.to;
+      const amount = argv.amount;
+
+      if (!isAddress(to)) {
+        console.error("Invalid to address");
+        return;
+      }
+      if (!isPositiveInteger(amount)) {
+        console.error("Invalid amount");
+        return;
+      }
+      const transaction = { to, amount, opcode: "receive" };
+      const sig = sign(JSON.stringify(transaction), walletPrivateKey);
+
+      transaction.sig = sig;
+
+      await addTransaction(transaction);
+
+      console.log(transaction);
     },
   })
   .demandCommand(1, "You need at least one command before moving on")

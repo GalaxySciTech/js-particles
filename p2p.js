@@ -4,18 +4,18 @@ const config = require("./config");
 
 // Get latest block from the pool
 async function getMiningInfo() {
-  return get("/get-mining-info");
+  return get("/getMiningInfo");
 }
 
 async function submitBlock(block) {
-  return post("/submit-block", block);
+  return post("/submitBlock", block);
 }
 
 async function getBalanceOfAddress(address) {
-  return get("/get-balance?address=" + address);
+  return get("/getBalance?address=" + address);
 }
 async function addTransaction(transaction) {
-  await post("/add-transaction", transaction);
+  await post("/addTransaction", transaction);
 }
 
 async function get(url) {
@@ -50,4 +50,5 @@ module.exports = {
   getBalanceOfAddress,
   getMiningInfo,
   submitBlock,
+  addTransaction,
 };

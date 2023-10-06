@@ -1,5 +1,21 @@
-function block(index, timestamp, previousHash, hash, data, nonce, difficulty) {
-  return { index, timestamp, previousHash, hash, data, nonce, difficulty };
+function block(
+  index,
+  timestamp,
+  previousHash,
+  hash,
+  transactions,
+  nonce,
+  difficulty
+) {
+  return {
+    index,
+    timestamp,
+    previousHash,
+    hash,
+    transactions,
+    nonce,
+    difficulty,
+  };
 }
 
 module.exports = block;

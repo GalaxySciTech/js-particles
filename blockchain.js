@@ -1,14 +1,16 @@
-const {
-  calculateHash,
-  getRoot,
-  toChecksumAddress,
-  isAddress,
-} = require("./utils");
-const db = require("./db/index.js");
-const Block = require("./block.js");
-const extendWallet = require("./wallets.json");
+const { calculateHash, isAddress, recoveryFromSig } = require("./utils");
+const db = require("./db");
+const Block = require("./block");
+
 const { config } = require("dotenv");
 const { minerAddress } = require("./config");
+const {
+  changeBalance,
+  getStateRoot,
+  initAccounts,
+  getBalance,
+} = require("./accounts");
+const { exec } = require("./vm");
 
 function createGenesisBlock() {
   return Block(
@@ -16,7 +18,11 @@ function createGenesisBlock() {
     0,
     "0",
     calculateHash(0, "0", 0, 0),
-    "Genesis Block",
+    [
+      {
+        data: "朕统六国，天下归一",
+      },
+    ],
     0,
     Number("0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
   );
@@ -32,7 +38,7 @@ async function isValidBlock(proposedBlock) {
   const proposedBlockHash = calculateHash(
     proposedBlock.index,
     proposedBlock.previousHash,
-    proposedBlock.data,
+    proposedBlock.transactions,
     proposedBlock.timestamp,
     proposedBlock.nonce
   );
@@ -67,17 +73,17 @@ async function isValidBlock(proposedBlock) {
     throw Error("Previous hash does not match hash of the latest block.");
   }
 
-  const data = proposedBlock?.data;
+  const data = proposedBlock?.transactions;
   if (data.length == 0) {
     throw Error("Block data is incorrect.");
   }
 
-  const last = data[data.length - 1];
+  const first = data[0];
 
   const miningReward = blockchain["miningReward"];
 
-  const coinbase = last?.coinbase;
-  const amount = last?.amount;
+  const coinbase = first?.coinbase;
+  const amount = first?.amount;
 
   if (!isAddress(coinbase)) {
     throw Error("Coinbase address is incorrect.");
@@ -158,9 +164,12 @@ async function adjustDifficulty() {
 }
 
 async function init() {
-  const genesis = createGenesisBlock();
   const blockchain = await db.find("blockchain", {});
   if (blockchain.length == 0) {
+    await initAccounts();
+    const genesis = createGenesisBlock();
+    genesis["stateRoot"] = await getStateRoot();
+    await db.insert("blocks", [genesis]);
     await db.insert("blockchain", [
       {
         name: "particles",
@@ -169,53 +178,34 @@ async function init() {
         difficulty: genesis.difficulty,
       },
     ]);
-    const wallets = extendWallet.map((item) => {
-      item["address"] = toChecksumAddress(item["address"]);
-      item["balance"] = Number(item["balance"]);
-      return item;
-    });
-
-    const stateRoot = getRoot(wallets);
-    genesis["stateRoot"] = stateRoot;
-    await db.insert("blocks", [genesis]);
-    await db.insert("wallets", wallets);
   }
 }
 
 async function mineBlock(proposedBlock) {
   await isValidBlock(proposedBlock);
 
-  const data = proposedBlock?.data;
+  const data = proposedBlock?.transactions;
   if (!data) {
     throw Error("Block data is incorrect.");
   }
-  const last = data[data.length - 1];
 
-  const coinbase = last?.coinbase;
-  const amount = last?.amount;
+  const first = data[0];
 
-  const wallet = await getBalanceOfAddress(coinbase);
-  if (wallet.address) {
-    await db.update(
-      "wallets",
-      { address: coinbase },
-      { $inc: { balance: amount } }
-    );
-  } else {
-    await db.insert("wallets", [
-      {
-        address: coinbase,
-        balance: amount,
-      },
-    ]);
+  if (first.opcode == "coinbase") {
+    await coinbase(first.coinbase, first.amount);
   }
+  if (data.length > 1) {
+    for (i = 1; i < data.length; i++) {
+      exec(data[i]);
+    }
+  }
+
   if (proposedBlock.index % 10 == 0) {
     await adjustDifficulty();
   }
 
-  const wallets = await getWallets();
-  const stateRoot = getRoot(wallets);
-  proposedBlock["stateRoot"] = stateRoot;
+  proposedBlock["stateRoot"] = await getStateRoot();
+
   await db.insert("blocks", [proposedBlock]);
   console.log(
     "Block accepted. New block hash: " +
@@ -223,62 +213,36 @@ async function mineBlock(proposedBlock) {
       " height: " +
       proposedBlock.index +
       " coinbase: " +
-      proposedBlock.data[0]?.coinbase
+      proposedBlock.transactions[0]?.coinbase
   );
 }
 
 async function addTransaction(transaction) {
   const from = recoveryFromSig(transaction.sig);
-  const wallet = await getBalanceOfAddress(from);
-  if (!wallet.address) {
-    return false;
+
+  const account = await getBalance(from);
+  if (!account.address) {
+    throw Error("Invalid from address");
   }
-  const balance = wallet.balance;
+  const balance = account.balance;
   if (balance < transaction.amount) {
-    return;
+    throw Error("Insufficient balance");
   }
   if (!isAddress(transaction.to)) {
-    return;
+    throw Error("Invalid to address");
   }
+  transaction["from"] = account.address;
   await db.insert("pendingTransactions", [transaction]);
+  console.log("receive transaction", transaction);
 }
 
-async function getBalanceOfAddress(address) {
-  address = toChecksumAddress(address);
-  const wallets = await db.find("wallets", { address });
-
-  return wallets?.[0] || {};
-}
-
-async function miningInfo() {
-  const blockchain = await getBlockChain();
-  const latestBlock = await getLatestBlock();
-  const wallets = await getWallets();
-  const pendingTransactions = await db.find("pendingTransactions", {});
-  return {
-    blockchain,
-    latestBlock,
-    minersSize: wallets.length,
-    pendingTransactions: pendingTransactions,
-    coinbaseTx: {
-      amount: blockchain.miningReward,
-      coinbase: minerAddress,
-    },
-  };
-}
-
-async function sync() {}
-
-async function getWallets() {
-  return await db.find("wallets", {});
-}
-
-async function blocks(index) {
+async function getBlock(index) {
   const blocks = await db.find("blocks", { index });
   return blocks?.[0] || {};
 }
 
 module.exports = {
+  getBlockChain,
   Block,
   createGenesisBlock,
   isValidBlock,
@@ -286,10 +250,6 @@ module.exports = {
   adjustDifficulty,
   init,
   mineBlock,
-  getBalanceOfAddress,
-  miningInfo,
-  sync,
-  getWallets,
-  blocks,
+  getBlock,
   addTransaction,
 };

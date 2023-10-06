@@ -12,9 +12,9 @@ async function minePendingTransactions(miningRewardAddress) {
   const latestBlock = miningInfo.latestBlock;
   const pendingTransactions = miningInfo.pendingTransactions;
   const coinbaseTx = miningInfo.coinbaseTx;
-  coinbaseTx.coinbase = miningRewardAddress;
+  coinbaseTx.from = miningRewardAddress;
 
-  pendingTransactions.push(coinbaseTx);
+  pendingTransactions.unshift(coinbaseTx);
 
   const index = (latestBlock.index || 0) + 1;
   let block = Block(
@@ -47,7 +47,7 @@ async function mineBlock(block) {
   block.hash = calculateHash(
     block.index,
     block.previousHash,
-    block.data,
+    block.transactions,
     block.timestamp,
     block.nonce
   );
@@ -57,7 +57,7 @@ async function mineBlock(block) {
     block.hash = calculateHash(
       block.index,
       block.previousHash,
-      block.data,
+      block.transactions,
       block.timestamp,
       block.nonce
     );

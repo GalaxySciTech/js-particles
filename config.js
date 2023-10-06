@@ -15,5 +15,8 @@ const minerAddress =
 
 const isMiner = process.env.isMiner || 1;
 
+const walletPrivateKey =
+  process.env.walletPrivateKey ||
+  "1234567890123456789012345678901234567890123456789012345678901234";
 
-module.exports = { db, dbpath, pool, minerAddress, isMiner };
+module.exports = { db, dbpath, pool, minerAddress, isMiner, walletPrivateKey };
