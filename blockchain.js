@@ -1,4 +1,9 @@
-const { calculateHash, isAddress, recoveryFromSig } = require("./utils");
+const {
+  calculateHash,
+  isAddress,
+  recoveryFromSig,
+  isPositiveInteger,
+} = require("./utils");
 const db = require("./db");
 const Block = require("./block");
 
@@ -10,7 +15,7 @@ const {
   initAccounts,
   getBalance,
 } = require("./accounts");
-const { exec } = require("./vm");
+const { exec, coinbase } = require("./vm");
 
 function createGenesisBlock() {
   return Block(
@@ -193,6 +198,8 @@ async function mineBlock(proposedBlock) {
 
   if (first.opcode == "coinbase") {
     await coinbase(first.coinbase, first.amount);
+  } else {
+    throw Error("Block data is incorrect. missing coinbase");
   }
   if (data.length > 1) {
     for (i = 1; i < data.length; i++) {
@@ -225,6 +232,12 @@ async function addTransaction(transaction) {
     throw Error("Invalid from address");
   }
   const balance = account.balance;
+  if (!isOpcode(transaction.opcode)) {
+    throw Error("Invalid opcode");
+  }
+  if (!isPositiveInteger(transaction.amount)) {
+    throw Error("Invalid amount");
+  }
   if (balance < transaction.amount) {
     throw Error("Insufficient balance");
   }

@@ -7,14 +7,19 @@ async function changeBalance(address, amount) {
   const accounts = await db.find("accounts", { address });
   if (accounts.length == 0 && amount > 0) {
     await db.insert("accounts", [{ address, balance: amount }]);
-    return;
+    return true;
   }
 
   const account = accounts[0];
 
+  if (BigNumber(account.balance).plus(amount).isLessThan(0)) {
+    return false;
+  }
+
   account.balance = BigNumber(account.balance).plus(amount).toFixed();
 
   await db.update("accounts", { address: account.address }, { $set: account });
+  return true;
 }
 
 async function getAccounts(address) {
