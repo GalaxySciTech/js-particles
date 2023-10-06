@@ -11,11 +11,9 @@ async function minePendingTransactions(miningRewardAddress) {
   const blockchain = miningInfo.blockchain;
   const latestBlock = miningInfo.latestBlock;
   const pendingTransactions = miningInfo.pendingTransactions;
+  const coinbaseTx = miningInfo.coinbaseTx;
+  coinbaseTx.coinbase = miningRewardAddress;
 
-  const coinbaseTx = {
-    coinbase: miningRewardAddress,
-    amount: blockchain.miningReward,
-  };
   pendingTransactions.push(coinbaseTx);
 
   const index = (latestBlock.index || 0) + 1;

@@ -2,6 +2,8 @@ const { calculateHash, getRoot, toChecksumAddress } = require("./utils");
 const db = require("./db/index.js");
 const Block = require("./block.js");
 const extendWallet = require("./wallets.json");
+const { config } = require("dotenv");
+const { minerAddress } = require("./config");
 
 function createGenesisBlock() {
   return Block(
@@ -168,7 +170,7 @@ async function init() {
     await db.insert("blockchain", [
       {
         name: "particles",
-        miningReward: 50,
+        miningReward: 5e19,
         targetMineTime: 5000,
         difficulty: genesis.difficulty,
       },
@@ -178,11 +180,11 @@ async function init() {
       item["balance"] = Number(item["balance"]);
       return item;
     });
-    await db.insert("wallets", wallets);
 
     const stateRoot = getRoot(wallets);
     genesis["stateRoot"] = stateRoot;
     await db.insert("blocks", [genesis]);
+    await db.insert("wallets", wallets);
   }
 }
 
@@ -247,13 +249,17 @@ async function getBalanceOfAddress(address) {
 async function miningInfo() {
   const blockchain = await getBlockChain();
   const latestBlock = await getLatestBlock();
-  const wallets = await db.find("wallets", {});
+  const wallets = await getWallets();
   const pendingTransactions = await db.find("pendingTransactions", {});
   return {
     blockchain,
     latestBlock,
     minersSize: wallets.length,
     pendingTransactions: pendingTransactions,
+    coinbaseTx: {
+      amount: blockchain.miningReward,
+      coinbase: minerAddress,
+    },
   };
 }
 
