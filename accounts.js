@@ -23,7 +23,11 @@ async function changeBalance(address, amount) {
 }
 
 async function getAccounts(address) {
-  return await db.find("accounts", { address });
+  if (address) {
+    return await db.find("accounts", { address });
+  } else {
+    return await db.find("accounts", {});
+  }
 }
 
 async function initAccounts() {
