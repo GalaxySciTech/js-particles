@@ -15,7 +15,7 @@ async function getBalanceOfAddress(address) {
   return get("/getBalance?address=" + address);
 }
 async function addTransaction(transaction) {
-  await post("/addTransaction", transaction);
+  return post("/addTransaction", transaction);
 }
 
 async function get(url) {

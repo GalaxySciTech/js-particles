@@ -15,7 +15,7 @@ const {
   initAccounts,
   getBalance,
 } = require("./accounts");
-const { exec, coinbase } = require("./vm");
+const { exec, coinbase, isOpcode } = require("./vm");
 
 function createGenesisBlock() {
   return Block(
@@ -203,7 +203,7 @@ async function mineBlock(proposedBlock) {
   }
   if (data.length > 1) {
     for (i = 1; i < data.length; i++) {
-      exec(data[i]);
+      await exec(data[i]);
     }
   }
 
@@ -214,17 +214,14 @@ async function mineBlock(proposedBlock) {
   proposedBlock["stateRoot"] = await getStateRoot();
 
   await db.insert("blocks", [proposedBlock]);
-  console.log(
-    "Block accepted. New block hash: " +
-      proposedBlock.hash +
-      " height: " +
-      proposedBlock.index +
-      " coinbase: " +
-      proposedBlock.transactions[0]?.coinbase
-  );
+  console.log("Block accepted.", JSON.stringify(proposedBlock));
 }
 
 async function addTransaction(transaction) {
+  const pt = await db.find("pendingTransactions", { sig: transaction.sig });
+  if (pt.length > 0) {
+    throw Error("Transaction sig error");
+  }
   const from = recoveryFromSig(transaction.sig);
 
   const account = await getBalance(from);

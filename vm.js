@@ -1,5 +1,5 @@
 const { changeBalance } = require("./accounts");
-
+const db = require("./db");
 const opcodes = {
   receive: async (from, to, amount, input) => {
     const success = await changeBalance(from, -amount);
@@ -8,14 +8,16 @@ const opcodes = {
     }
   },
 };
-function exec(transaction) {
+async function exec(transaction) {
   const opcode = transaction.opcode;
-  opcodes[opcode](
+  await opcodes[opcode](
     transaction.from,
     transaction.to,
     transaction.amount,
     transaction.input
   );
+
+  await db.del("pendingTransactions", { sig: transaction.sig });
 }
 
 async function coinbase(from, amount) {

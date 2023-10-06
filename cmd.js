@@ -68,8 +68,12 @@ yargs
 
       transaction.sig = sig;
 
-      await addTransaction(transaction);
+      const res = await addTransaction(transaction);
 
+      if (res.status == 0) {
+        console.log(res.result);
+        return;
+      }
       console.log(transaction);
     },
   })
