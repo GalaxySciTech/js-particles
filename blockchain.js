@@ -26,7 +26,7 @@ function createGenesisBlock() {
     "",
     [
       {
-        data: "朕统六国，天下归一",
+        data: "e69c95e7bb9fe585ade59bbdefbc8ce5a4a9e4b88be5bd92e4b880efbc8ce7ad91e995bfe59f8eefbc8ce4b880e99587e4b99de5b79ee9be99e88489efbc8ce58dabe68891e5a4a7e7a7a6efbc8ce68aa4e68891e7a4bee7a8b7e38082e69c95e4bba5e5a78be79a87e4b98be5908de59ca8e6ada4e7ab8be8aa93efbc8ce69c95e59ca8e5bd93e5ae88e59c9fe5bc80e79686efbc8ce689abe5b9b3e59b9be5a4b7efbc8ce5ae9ae68891e5a4a7e7a7a6e4b887e4b896e4b98be59fbaefbc8ce69c95e4baa1efbc8ce4baa6e5b086e8baabe58c96e9be99e9ad82efbc8ce4bd91e68891e58d8ee5a48fefbc8ce6b0b8e4b896e4b88de8a1b0e38082",
       },
     ],
     0,
