@@ -4,6 +4,8 @@ const {
   recoveryFromSig,
   isPositiveInteger,
   createMsgFromTransaction,
+  strToHex,
+  to64Hex,
 } = require("./utils");
 const db = require("./db");
 const Block = require("./block");
@@ -17,6 +19,7 @@ const {
   getBalance,
 } = require("./accounts");
 const { exec, coinbase, isOpcode } = require("./vm");
+const { default: BigNumber } = require("bignumber.js");
 
 function createGenesisBlock() {
   const block = Block(
@@ -30,7 +33,7 @@ function createGenesisBlock() {
       },
     ],
     0,
-    Number("0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+    "0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
   );
   block.hash = calculateHash(block);
   return block;
@@ -68,7 +71,7 @@ async function isValidBlock(proposedBlock) {
     throw Error("Block difficulty does not match latest block.");
   }
   // Check if the block hash meets the difficulty requirement
-  if (BigInt("0x" + proposedBlock.hash) >= BigInt(proposedBlock.difficulty)) {
+  if (proposedBlock.hash >= proposedBlock.difficulty) {
     throw Error("Block hash does not meet difficulty requirements.");
   }
 
@@ -146,23 +149,31 @@ async function adjustDifficulty() {
 
   console.log("last 10 blocks avg time", avgMineTime);
 
-  const changeDifficulty = Math.floor(difficulty * 0.1);
+  const difficultyNumber = BigNumber("0x" + difficulty);
+
+  const addDifficulty = difficultyNumber.multipliedBy(1.1).toFixed(0);
+
+  const subDifficulty = difficultyNumber.multipliedBy(0.9).toFixed(0);
 
   if (avgMineTime < targetMineTime) {
     await db.update(
       "blockchain",
       {},
-      { $inc: { difficulty: -changeDifficulty } }
+      {
+        $set: {
+          difficulty: to64Hex(subDifficulty),
+        },
+      }
     );
   } else if (
-    difficulty + changeDifficulty <
-    Number("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+    addDifficulty <
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
   ) {
     // Ensure difficulty never drops below 1
     await db.update(
       "blockchain",
       {},
-      { $inc: { difficulty: changeDifficulty } }
+      { $set: { difficulty: to64Hex(addDifficulty) } }
     );
   }
 }
