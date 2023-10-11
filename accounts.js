@@ -1,6 +1,6 @@
 const { default: BigNumber } = require("bignumber.js");
 const db = require("./db");
-const extendWallet = require("./wallets.json");
+const extendWallet = require("./accounts.json");
 const { toChecksumAddress, getRoot } = require("./utils");
 
 async function changeBalance(address, amount) {

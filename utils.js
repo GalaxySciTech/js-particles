@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const secp256k1 = require("secp256k1");
 const keccak256 = require("keccak256");
 const { MerkleTree } = require("merkletreejs");
+const { default: BigNumber } = require("bignumber.js");
 
 function addressFromPublicKey(publicKey) {
   const addressBuffer = keccak256(Buffer.from(publicKey));
@@ -83,11 +84,9 @@ function recoveryFromSig(sig) {
   return addressFromPublicKey(recoveredPublicKey);
 }
 
-function calculateHash(index, previousHash, data, timestamp, nonce) {
-  return crypto
-    .createHash("sha256")
-    .update(index + previousHash + timestamp + JSON.stringify(data) + nonce)
-    .digest("hex");
+function calculateHash(data) {
+  data = JSON.stringify(data);
+  return crypto.createHash("sha256").update(data).digest("hex");
 }
 function sleep(time) {
   return new Promise((resolve) => setTimeout(resolve, time));
@@ -125,6 +124,10 @@ function toChecksumAddress(address) {
   return checksumAddress;
 }
 
+function to64Hex(number) {
+  return BigNumber(number).toString(16).padStart(64, "0");
+}
+
 module.exports = {
   createMsgFromTransaction,
   addressFromPrivateKeyHex,
@@ -139,4 +142,5 @@ module.exports = {
   addressFromPublicKey,
   getRoot,
   toChecksumAddress,
+  to64Hex,
 };
