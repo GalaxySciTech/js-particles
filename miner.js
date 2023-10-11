@@ -46,7 +46,7 @@ async function mineBlock(block) {
   let hashesTried = 0;
   block.hash = calculateHash(block);
 
-  while (BigInt("0x" + block.hash) >= BigInt(block.difficulty)) {
+  while (block.hash >= block.difficulty) {
     block.nonce++;
     block.hash = "";
     block.hash = calculateHash(block);
